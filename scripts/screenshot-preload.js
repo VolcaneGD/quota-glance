@@ -6,12 +6,19 @@ const snapshot = {
   sourcePath: null,
   planType: 'plus',
   limitId: 'codex',
+  fiveHour: {
+    usedPercent: 46,
+    remainingPercent: 54,
+    resetsAt: new Date(now + (2 * 60 + 18) * 60 * 1000).toISOString(),
+    windowMinutes: 300,
+  },
   weekly: {
     usedPercent: 68,
     remainingPercent: 32,
     resetsAt: new Date(now + (3 * 24 + 7) * 60 * 60 * 1000).toISOString(),
     windowMinutes: 10080,
   },
+  primary: null,
   secondary: null,
   credits: {
     hasCredits: true,

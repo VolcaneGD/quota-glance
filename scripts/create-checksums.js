@@ -2,7 +2,8 @@ const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const dist = path.join(__dirname, '..', 'dist');
+const outputDirectory = process.argv[2] || 'dist';
+const dist = path.join(__dirname, '..', outputDirectory);
 const files = fs.readdirSync(dist)
   .filter((name) => /^Quota-Glance-.*\.exe$/i.test(name))
   .sort();

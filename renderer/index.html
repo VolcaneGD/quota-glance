@@ -37,23 +37,34 @@
       <section class="usage-card">
         <div class="section-heading">
           <div>
+            <p id="five-hour-label" class="eyebrow">5時間利用上限</p>
+            <strong id="five-hour-summary">—</strong>
+          </div>
+          <span id="five-hour-badge" class="badge">—</span>
+        </div>
+        <div id="five-hour-progress-track" class="progress-track" role="progressbar" aria-label="5時間利用量" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+          <div id="five-hour-progress-fill" class="progress-fill"></div>
+        </div>
+        <div class="usage-meta">
+          <span id="five-hour-reset-time">—</span>
+          <span id="five-hour-countdown">—</span>
+        </div>
+      </section>
+
+      <section class="usage-card">
+        <div class="section-heading">
+          <div>
             <p id="weekly-label" class="eyebrow">週間利用上限</p>
             <strong id="weekly-summary">—</strong>
           </div>
           <span id="weekly-badge" class="badge">—</span>
         </div>
-        <div id="progress-track" class="progress-track" role="progressbar" aria-label="週間利用量" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-          <div id="progress-fill" class="progress-fill"></div>
+        <div id="weekly-progress-track" class="progress-track" role="progressbar" aria-label="週間利用量" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+          <div id="weekly-progress-fill" class="progress-fill"></div>
         </div>
-        <div class="usage-scale"><span>0%</span><span>100%</span></div>
-      </section>
-
-      <section class="reset-card">
-        <div class="reset-icon" aria-hidden="true">↻</div>
-        <div>
-          <p id="reset-label" class="eyebrow">次のリセット日時</p>
-          <strong id="reset-time">—</strong>
-          <p id="countdown" class="subtle">—</p>
+        <div class="usage-meta">
+          <span id="weekly-reset-time">—</span>
+          <span id="weekly-countdown">—</span>
         </div>
       </section>
 
