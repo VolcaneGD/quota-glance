@@ -1,6 +1,6 @@
-# Quota Glance 1.0.0
+# Quota Glance 1.1.0
 
-Quota Glanceは、Codexの残りクレジット、週間使用率、次回リセット日時をコンパクトに確認できるWindows向け非公式フリーソフトです。
+Quota Glanceは、Codexの残りクレジット、5時間使用率、週間使用率、それぞれの次回リセット日時をコンパクトに確認できるWindows向け非公式フリーソフトです。
 
 ## ダウンロード
 

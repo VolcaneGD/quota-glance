@@ -6,7 +6,7 @@ app.whenReady().then(async () => {
   const language = process.argv.includes('--language=en') ? 'en' : 'ja';
   const window = new BrowserWindow({
     width: 372,
-    height: 486,
+    height: 548,
     show: false,
     frame: false,
     backgroundColor: '#0b1210',
@@ -18,14 +18,15 @@ app.whenReady().then(async () => {
     },
   });
 
-  await window.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
-  if (language === 'en') {
-    await window.webContents.executeJavaScript("document.querySelector('#lang-button').click()");
-  }
+  const rendererPath = path.join(__dirname, '..', 'renderer', 'index.html');
+  await window.loadFile(rendererPath);
+  await window.webContents.executeJavaScript(`localStorage.setItem('quota-glance-language', '${language}')`);
+  await window.loadFile(rendererPath);
   await new Promise((resolve) => setTimeout(resolve, 500));
   const image = await window.webContents.capturePage();
   const output = path.join(__dirname, '..', 'assets', `quota-glance-screenshot-${language}.png`);
   await fs.writeFile(output, image.toPNG());
   console.log(output);
-  app.quit();
+  window.destroy();
+  app.exit(0);
 });

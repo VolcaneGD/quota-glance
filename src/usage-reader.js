@@ -18,13 +18,19 @@ function parseRateLimitLine(line, sourcePath = '') {
     const timestampMs = Date.parse(record.timestamp);
     if (!Number.isFinite(timestampMs)) return null;
 
+    const primary = normalizeLimit(rateLimits.primary);
+    const secondary = normalizeLimit(rateLimits.secondary);
+    const { fiveHour, weekly } = classifyLimits(primary, secondary);
+
     return {
       observedAt: new Date(timestampMs).toISOString(),
       sourcePath,
       planType: rateLimits.plan_type || null,
       limitId: rateLimits.limit_id || null,
-      weekly: normalizeLimit(rateLimits.primary),
-      secondary: normalizeLimit(rateLimits.secondary),
+      fiveHour,
+      weekly,
+      primary,
+      secondary,
       credits: normalizeCredits(rateLimits.credits),
       spendControlReached: rateLimits.spend_control_reached === true,
       rateLimitReachedType: rateLimits.rate_limit_reached_type || null,
@@ -32,6 +38,21 @@ function parseRateLimitLine(line, sourcePath = '') {
   } catch {
     return null;
   }
+}
+
+function classifyLimits(primary, secondary) {
+  const limits = [primary, secondary].filter(Boolean);
+  const fiveHour = limits.find((limit) => (
+    Number.isFinite(limit.windowMinutes)
+    && limit.windowMinutes >= 240
+    && limit.windowMinutes <= 360
+  )) || null;
+  const weekly = limits.find((limit) => (
+    Number.isFinite(limit.windowMinutes)
+    && limit.windowMinutes >= 6 * 24 * 60
+  )) || (!fiveHour ? primary : null);
+
+  return { fiveHour, weekly };
 }
 
 function normalizeLimit(limit) {
@@ -127,7 +148,9 @@ async function readLatestSnapshot(roots) {
     sourcePath: null,
     planType: null,
     limitId: null,
+    fiveHour: null,
     weekly: null,
+    primary: null,
     secondary: null,
     credits: null,
     spendControlReached: false,
@@ -193,6 +216,7 @@ class UsageReader extends EventEmitter {
 
 module.exports = {
   UsageReader,
+  classifyLimits,
   findLatestInFile,
   normalizeCredits,
   normalizeLimit,

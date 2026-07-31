@@ -41,7 +41,11 @@ const trayStrings = {
     refresh: '最新情報に更新',
     quit: '終了',
     waiting: 'データ待機中',
-    usage: (used, balance) => `週間 ${used}% 使用 / 残高 ${balance}`,
+    usage: (fiveHour, weekly, balance) => [
+      fiveHour == null ? null : `5時間 ${fiveHour}%`,
+      weekly == null ? null : `週間 ${weekly}%`,
+      `残高 ${balance}`,
+    ].filter(Boolean).join(' / '),
     unlimited: '無制限',
   },
   en: {
@@ -49,7 +53,11 @@ const trayStrings = {
     refresh: 'Refresh usage',
     quit: 'Quit',
     waiting: 'Waiting for usage data',
-    usage: (used, balance) => `Weekly ${used}% used / Balance ${balance}`,
+    usage: (fiveHour, weekly, balance) => [
+      fiveHour == null ? null : `5-hour ${fiveHour}%`,
+      weekly == null ? null : `Weekly ${weekly}%`,
+      `Balance ${balance}`,
+    ].filter(Boolean).join(' / '),
     unlimited: 'Unlimited',
   },
 };
@@ -61,9 +69,9 @@ function trayCopy() {
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 372,
-    height: 486,
+    height: 548,
     minWidth: 340,
-    minHeight: 430,
+    minHeight: 500,
     maxWidth: 460,
     show: false,
     frame: false,
@@ -115,16 +123,22 @@ function updateTrayMenu() {
 function updateTray(snapshot) {
   if (!tray) return;
   const copy = trayCopy();
-  const used = snapshot?.weekly?.usedPercent;
-  tray.setImage(makeTrayImage(used).resize({ width: 16, height: 16 }));
-  if (used == null) {
+  const fiveHour = snapshot?.fiveHour?.usedPercent;
+  const weekly = snapshot?.weekly?.usedPercent;
+  const indicator = fiveHour ?? weekly;
+  tray.setImage(makeTrayImage(indicator).resize({ width: 16, height: 16 }));
+  if (indicator == null) {
     tray.setToolTip(`Quota Glance — ${copy.waiting}`);
     return;
   }
   const balance = snapshot?.credits?.unlimited
     ? copy.unlimited
     : snapshot?.credits?.balance == null ? '—' : `${snapshot.credits.balance.toFixed(2)} credits`;
-  tray.setToolTip(`Quota Glance — ${copy.usage(Math.round(used), balance)}`);
+  tray.setToolTip(`Quota Glance — ${copy.usage(
+    fiveHour == null ? null : Math.round(fiveHour),
+    weekly == null ? null : Math.round(weekly),
+    balance,
+  )}`);
 }
 
 function publish(snapshot) {

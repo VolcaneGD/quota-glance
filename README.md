@@ -1,14 +1,15 @@
 # Quota Glance
 
-Quota Glanceは、Codexがローカルに記録した利用状況を小さな常駐ウィンドウで確認できる、Windows向けの非公式フリーソフトです。
+Quota Glanceは、Codexがローカルに記録した利用状況を小さな常駐ウィンドウで確認できる、Windows向けの非公式フリーソフトです。5時間枠と週間枠を同時に表示します。
 
 > Quota GlanceはVOLCANEが独立して開発した非公式ツールです。OpenAIによる提供、承認、後援を受けた製品ではありません。
 
 ## 主な機能
 
 - 残高・残りクレジット
+- 5時間利用上限の使用率と残り割合
 - 週間利用上限の使用率と残り割合
-- 次のリセット日時（日本時間）と残り時間
+- 各制限枠のリセット日時（日本時間）と残り時間
 - 日本語・英語の表示切替と設定保存
 - ファイル変更監視と15秒間隔の自動更新
 - 常に手前に表示
@@ -67,7 +68,7 @@ npm.cmd run release
 
 Quota Glance is an unofficial freeware utility for Windows that displays usage information recorded locally by Codex in a compact always-available window.
 
-It shows the remaining credit balance, weekly usage, the next reset time, and a countdown. The interface and tray menu can be switched between Japanese and English. Quota Glance reads local usage snapshots only; it does not read authentication tokens, use analytics, or transmit data.
+It shows the remaining credit balance, five-hour and weekly usage windows, separate reset times, and countdowns. The interface and tray menu can be switched between Japanese and English. Quota Glance reads local usage snapshots only; it does not read authentication tokens, use analytics, or transmit data.
 
 Quota Glance is independently developed by VOLCANE. It is not provided, endorsed, sponsored, or supported by OpenAI. See [PRIVACY.md](PRIVACY.md), [NOTICE.md](NOTICE.md), and [LICENSE](LICENSE) for details.
 

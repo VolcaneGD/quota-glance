@@ -80,7 +80,7 @@ button { font: inherit; }
 .icon-button.active { color: var(--accent); background: var(--accent-soft); }
 .language-button { width: 35px; color: var(--accent); font-size: 9px; font-weight: 750; letter-spacing: 0.04em; }
 
-.balance-card, .usage-card, .reset-card {
+.balance-card, .usage-card {
   border: 1px solid var(--line);
   border-radius: 15px;
   background: linear-gradient(145deg, rgba(22, 37, 32, 0.96), rgba(14, 25, 22, 0.96));
@@ -89,7 +89,6 @@ button { font: inherit; }
 
 .balance-card { padding: 19px 20px 17px; }
 .usage-card { padding: 16px 18px 14px; }
-.reset-card { display: flex; align-items: center; gap: 13px; padding: 14px 17px; }
 
 .eyebrow { margin: 0 0 7px; color: var(--muted); font-size: 10px; font-weight: 650; letter-spacing: 0.08em; text-transform: uppercase; }
 .balance-row { display: flex; align-items: baseline; gap: 8px; }
@@ -102,13 +101,12 @@ button { font: inherit; }
 .badge { min-width: 50px; padding: 6px 9px; border-radius: 999px; color: var(--accent); background: var(--accent-soft); font-size: 10px; font-weight: 700; text-align: center; }
 .badge.warn { color: var(--warn); background: rgba(255, 202, 112, 0.12); }
 
-.progress-track { height: 8px; margin-top: 16px; overflow: hidden; border-radius: 99px; background: rgba(255,255,255,0.07); }
+.progress-track { height: 8px; margin-top: 12px; overflow: hidden; border-radius: 99px; background: rgba(255,255,255,0.07); }
 .progress-fill { width: 0; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #36c98f, var(--accent)); transition: width 360ms ease; }
 .progress-fill.warn { background: linear-gradient(90deg, #e9a943, var(--warn)); }
-.usage-scale { display: flex; justify-content: space-between; margin-top: 6px; color: #5f766d; font-size: 8px; }
-
-.reset-icon { display: grid; place-items: center; flex: 0 0 auto; width: 36px; height: 36px; border-radius: 11px; color: var(--accent); background: var(--accent-soft); font-size: 19px; }
-.reset-card strong { font-size: 13px; font-weight: 620; font-variant-numeric: tabular-nums; }
+.usage-meta { display: flex; justify-content: space-between; gap: 8px; margin-top: 8px; color: var(--muted); font-size: 9px; font-variant-numeric: tabular-nums; }
+.usage-meta span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.usage-meta span:last-child { flex: 0 0 auto; color: #718a7f; }
 
 footer { display: flex; align-items: center; gap: 8px; margin-top: auto; }
 .source-button, .refresh-button {
@@ -132,5 +130,4 @@ footer { display: flex; align-items: center; gap: 8px; margin-top: auto; }
   .balance-card { padding: 14px 18px; }
   .balance-row strong { font-size: 30px; }
   .usage-card { padding: 13px 16px 11px; }
-  .reset-card { padding: 10px 15px; }
 }

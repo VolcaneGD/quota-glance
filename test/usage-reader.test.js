@@ -21,12 +21,35 @@ test('Codex token_countイベントから週間上限とクレジットを抽出
 
   const result = parseRateLimitLine(line, path.join('sessions', 'sample.jsonl'));
   assert.equal(result.planType, 'plus');
+  assert.equal(result.fiveHour, null);
   assert.equal(result.weekly.usedPercent, 72);
   assert.equal(result.weekly.remainingPercent, 28);
   assert.equal(result.weekly.windowMinutes, 10080);
   assert.equal(result.credits.balance, 42.5);
   assert.equal(result.credits.hasCredits, true);
   assert.match(result.weekly.resetsAt, /^2026-/);
+});
+
+test('5時間枠と週間枠をwindow_minutesから分類する', () => {
+  const line = JSON.stringify({
+    timestamp: '2026-07-31T11:31:40.715Z',
+    type: 'event_msg',
+    payload: {
+      type: 'token_count',
+      rate_limits: {
+        limit_id: 'codex',
+        primary: { used_percent: 46, window_minutes: 300, resets_at: 1785903004 },
+        secondary: { used_percent: 72, window_minutes: 10080, resets_at: 1786303004 },
+      },
+    },
+  });
+
+  const result = parseRateLimitLine(line);
+  assert.equal(result.fiveHour.usedPercent, 46);
+  assert.equal(result.fiveHour.remainingPercent, 54);
+  assert.equal(result.fiveHour.windowMinutes, 300);
+  assert.equal(result.weekly.usedPercent, 72);
+  assert.equal(result.weekly.windowMinutes, 10080);
 });
 
 test('壊れた行と利用量を含まない行は無視する', () => {
@@ -38,7 +61,7 @@ test('使用率は0から100の範囲に収める', () => {
   const line = JSON.stringify({
     timestamp: '2026-07-31T11:31:40.715Z',
     type: 'event_msg',
-    payload: { rate_limits: { primary: { used_percent: 130 } } },
+    payload: { rate_limits: { primary: { used_percent: 130, window_minutes: 10080 } } },
   });
   const result = parseRateLimitLine(line);
   assert.equal(result.weekly.usedPercent, 100);

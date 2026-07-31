@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.0 - 2026-07-31
+
+- Added simultaneous display of the Codex five-hour and weekly usage windows.
+- Added separate reset times and countdowns for both usage windows.
+- Detects each window by its recorded duration, preserving compatibility with older weekly-only session data.
+- Updated the tray indicator and tooltip to include the five-hour window when available.
+
 ## 1.0.0 - 2026-07-31
 
 - Initial public release of Quota Glance.
