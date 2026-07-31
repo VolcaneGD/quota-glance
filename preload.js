@@ -3,6 +3,8 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('codexUsage', {
   get: () => ipcRenderer.invoke('usage:get'),
   refresh: () => ipcRenderer.invoke('usage:refresh'),
+  getRefreshInterval: () => ipcRenderer.invoke('usage:get-refresh-interval'),
+  setRefreshInterval: (milliseconds) => ipcRenderer.invoke('usage:set-refresh-interval', milliseconds),
   setLanguage: (language) => ipcRenderer.invoke('app:set-language', language),
   isPinned: () => ipcRenderer.invoke('window:is-pinned'),
   togglePin: () => ipcRenderer.invoke('window:toggle-pin'),

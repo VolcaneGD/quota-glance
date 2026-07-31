@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.0 - 2026-08-01
+
+- Added a saved 1–60 second refresh interval slider, defaulting to 5 seconds.
+- The latest-fetch label now reflects each actual local scan instead of the timestamp embedded in the source record.
+- Reduced file-change debounce latency and immediately refreshes after changing the interval.
+- Replaced the runtime tray SVG with opaque, high-contrast Windows tray PNG assets.
+
 ## 1.1.0 - 2026-07-31
 
 - Added simultaneous display of the Codex five-hour and weekly usage windows.
