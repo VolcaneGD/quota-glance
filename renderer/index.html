@@ -68,6 +68,14 @@
         </div>
       </section>
 
+      <section class="refresh-settings" aria-labelledby="refresh-interval-label">
+        <div class="refresh-settings-heading">
+          <label id="refresh-interval-label" for="refresh-interval">更新頻度</label>
+          <output id="refresh-interval-value" for="refresh-interval">5秒</output>
+        </div>
+        <input id="refresh-interval" type="range" min="1" max="60" step="1" value="5" aria-label="更新頻度" />
+      </section>
+
       <footer>
         <button id="source-button" class="source-button" title="取得元ファイルを表示">
           <span id="updated-at">最終取得 —</span>

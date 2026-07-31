@@ -3,10 +3,18 @@ const fsp = require('node:fs/promises');
 const path = require('node:path');
 const { EventEmitter } = require('node:events');
 
-const REFRESH_INTERVAL_MS = 15_000;
+const DEFAULT_REFRESH_INTERVAL_MS = 5_000;
+const MIN_REFRESH_INTERVAL_MS = 1_000;
+const MAX_REFRESH_INTERVAL_MS = 60_000;
 const MAX_FILES = 40;
 const MAX_SCAN_BYTES = 8 * 1024 * 1024;
 const CHUNK_BYTES = 256 * 1024;
+
+function normalizeRefreshInterval(value) {
+  const milliseconds = Number(value);
+  if (!Number.isFinite(milliseconds)) return DEFAULT_REFRESH_INTERVAL_MS;
+  return Math.min(MAX_REFRESH_INTERVAL_MS, Math.max(MIN_REFRESH_INTERVAL_MS, Math.round(milliseconds)));
+}
 
 function parseRateLimitLine(line, sourcePath = '') {
   if (!line.includes('"rate_limits"')) return null;
@@ -160,25 +168,27 @@ async function readLatestSnapshot(roots) {
 }
 
 class UsageReader extends EventEmitter {
-  constructor({ roots, refreshIntervalMs = REFRESH_INTERVAL_MS }) {
+  constructor({ roots, refreshIntervalMs = DEFAULT_REFRESH_INTERVAL_MS }) {
     super();
     this.roots = roots;
-    this.refreshIntervalMs = refreshIntervalMs;
+    this.refreshIntervalMs = normalizeRefreshInterval(refreshIntervalMs);
     this.snapshot = null;
     this.timer = null;
     this.watchers = [];
     this.refreshing = null;
     this.debounceTimer = null;
+    this.running = false;
   }
 
   async start() {
+    this.running = true;
     await this.refresh();
-    this.timer = setInterval(() => this.refresh(), this.refreshIntervalMs);
+    this.scheduleRefresh();
     for (const root of this.roots) {
       try {
         const watcher = fs.watch(root, { recursive: true }, () => {
           clearTimeout(this.debounceTimer);
-          this.debounceTimer = setTimeout(() => this.refresh(), 500);
+          this.debounceTimer = setTimeout(() => this.refresh(), 150);
         });
         watcher.on('error', () => {});
         this.watchers.push(watcher);
@@ -193,6 +203,7 @@ class UsageReader extends EventEmitter {
     if (this.refreshing) return this.refreshing;
     this.refreshing = readLatestSnapshot(this.roots)
       .then((snapshot) => {
+        snapshot.checkedAt = new Date().toISOString();
         const changed = JSON.stringify(snapshot) !== JSON.stringify(this.snapshot);
         this.snapshot = snapshot;
         if (changed) this.emit('change', snapshot);
@@ -206,7 +217,22 @@ class UsageReader extends EventEmitter {
     return this.snapshot;
   }
 
+  scheduleRefresh() {
+    clearInterval(this.timer);
+    this.timer = this.running
+      ? setInterval(() => this.refresh(), this.refreshIntervalMs)
+      : null;
+  }
+
+  setRefreshInterval(value) {
+    this.refreshIntervalMs = normalizeRefreshInterval(value);
+    this.scheduleRefresh();
+    if (this.running) this.refresh();
+    return this.refreshIntervalMs;
+  }
+
   stop() {
+    this.running = false;
     clearInterval(this.timer);
     clearTimeout(this.debounceTimer);
     for (const watcher of this.watchers) watcher.close();
@@ -215,11 +241,15 @@ class UsageReader extends EventEmitter {
 }
 
 module.exports = {
+  DEFAULT_REFRESH_INTERVAL_MS,
+  MAX_REFRESH_INTERVAL_MS,
+  MIN_REFRESH_INTERVAL_MS,
   UsageReader,
   classifyLimits,
   findLatestInFile,
   normalizeCredits,
   normalizeLimit,
+  normalizeRefreshInterval,
   parseRateLimitLine,
   readLatestSnapshot,
 };

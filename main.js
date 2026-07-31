@@ -20,19 +20,11 @@ const reader = new UsageReader({
   ],
 });
 
-function makeTrayImage(usedPercent = 0) {
-  const level = Number.isFinite(usedPercent) ? Math.min(100, Math.max(0, usedPercent)) : 0;
-  const color = level >= 85 ? '#ffca70' : '#55e6ad';
-  const dash = Math.round(level * 0.44);
-  const svg = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
-      <rect width="32" height="32" rx="9" fill="#101b18"/>
-      <circle cx="16" cy="16" r="7" fill="none" stroke="#294038" stroke-width="3"/>
-      <circle cx="16" cy="16" r="7" fill="none" stroke="${color}" stroke-width="3"
-        stroke-linecap="round" stroke-dasharray="${dash} 44" transform="rotate(-90 16 16)"/>
-      <circle cx="16" cy="16" r="2.5" fill="${color}"/>
-    </svg>`;
-  return nativeImage.createFromDataURL(`data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`);
+function makeTrayImage(usedPercent = null) {
+  const assetName = usedPercent == null
+    ? 'tray-idle.png'
+    : usedPercent >= 85 ? 'tray-warning.png' : 'tray-normal.png';
+  return nativeImage.createFromPath(path.join(__dirname, 'assets', assetName)).resize({ width: 16, height: 16 });
 }
 
 const trayStrings = {
@@ -69,9 +61,9 @@ function trayCopy() {
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 372,
-    height: 548,
+    height: 604,
     minWidth: 340,
-    minHeight: 500,
+    minHeight: 556,
     maxWidth: 460,
     show: false,
     frame: false,
@@ -100,7 +92,7 @@ function createWindow() {
 }
 
 function createTray() {
-  tray = new Tray(makeTrayImage().resize({ width: 16, height: 16 }));
+  tray = new Tray(makeTrayImage());
   tray.setToolTip('Quota Glance');
   updateTrayMenu();
   tray.on('click', () => {
@@ -126,7 +118,7 @@ function updateTray(snapshot) {
   const fiveHour = snapshot?.fiveHour?.usedPercent;
   const weekly = snapshot?.weekly?.usedPercent;
   const indicator = fiveHour ?? weekly;
-  tray.setImage(makeTrayImage(indicator).resize({ width: 16, height: 16 }));
+  tray.setImage(makeTrayImage(indicator));
   if (indicator == null) {
     tray.setToolTip(`Quota Glance — ${copy.waiting}`);
     return;
@@ -169,6 +161,8 @@ app.on('before-quit', () => { isQuitting = true; reader.stop(); });
 
 ipcMain.handle('usage:get', () => reader.getSnapshot());
 ipcMain.handle('usage:refresh', () => reader.refresh());
+ipcMain.handle('usage:get-refresh-interval', () => reader.refreshIntervalMs);
+ipcMain.handle('usage:set-refresh-interval', (_event, milliseconds) => reader.setRefreshInterval(milliseconds));
 ipcMain.handle('window:toggle-pin', () => {
   const pinned = !mainWindow.isAlwaysOnTop();
   mainWindow.setAlwaysOnTop(pinned, 'floating');

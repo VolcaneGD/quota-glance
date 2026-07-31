@@ -1,7 +1,14 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('node:path');
-const { parseRateLimitLine } = require('../src/usage-reader');
+const { normalizeRefreshInterval, parseRateLimitLine } = require('../src/usage-reader');
+
+test('更新頻度を1秒から60秒の範囲に収める', () => {
+  assert.equal(normalizeRefreshInterval(100), 1_000);
+  assert.equal(normalizeRefreshInterval(5_000), 5_000);
+  assert.equal(normalizeRefreshInterval(120_000), 60_000);
+  assert.equal(normalizeRefreshInterval('invalid'), 5_000);
+});
 
 test('Codex token_countイベントから週間上限とクレジットを抽出する', () => {
   const line = JSON.stringify({

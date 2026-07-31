@@ -3,6 +3,7 @@ const { contextBridge } = require('electron');
 const now = Date.now();
 const snapshot = {
   observedAt: new Date(now).toISOString(),
+  checkedAt: new Date(now).toISOString(),
   sourcePath: null,
   planType: 'plus',
   limitId: 'codex',
@@ -29,9 +30,16 @@ const snapshot = {
   rateLimitReachedType: null,
 };
 
+let refreshIntervalMs = 5_000;
+
 contextBridge.exposeInMainWorld('codexUsage', {
   get: async () => snapshot,
   refresh: async () => snapshot,
+  getRefreshInterval: async () => refreshIntervalMs,
+  setRefreshInterval: async (milliseconds) => {
+    refreshIntervalMs = milliseconds;
+    return refreshIntervalMs;
+  },
   setLanguage: async (language) => language,
   isPinned: async () => true,
   togglePin: async () => true,

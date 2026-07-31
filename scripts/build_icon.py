@@ -23,5 +23,25 @@ ico_path = assets / "icon.ico"
 image.save(png_path, "PNG")
 image.save(ico_path, "ICO", sizes=[(16, 16), (24, 24), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)])
 
+
+def build_tray_icon(filename: str, accent: str) -> None:
+    """Create an opaque, high-contrast icon that survives Windows tray scaling."""
+    tray = Image.new("RGB", (32, 32), "#0B1512")
+    tray_draw = ImageDraw.Draw(tray)
+    tray_draw.rounded_rectangle((1, 1, 30, 30), radius=8, fill="#10201B", outline="#416258", width=2)
+    tray_draw.ellipse((7, 7, 24, 24), outline="#29493E", width=3)
+    tray_draw.arc((7, 7, 24, 24), start=-90, end=225, fill=accent, width=3)
+    tray_draw.ellipse((13, 13, 18, 18), fill=accent)
+    tray_draw.line((20, 20, 26, 26), fill=accent, width=3)
+    tray.save(assets / filename, "PNG")
+
+
+build_tray_icon("tray-normal.png", "#55E6AD")
+build_tray_icon("tray-warning.png", "#FFCA70")
+build_tray_icon("tray-idle.png", "#92AAA0")
+
 print(png_path)
 print(ico_path)
+print(assets / "tray-normal.png")
+print(assets / "tray-warning.png")
+print(assets / "tray-idle.png")

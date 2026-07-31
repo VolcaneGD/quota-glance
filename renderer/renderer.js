@@ -25,6 +25,9 @@ const I18N = {
     updated: ({ date }) => `最終取得 ${date}`,
     refresh: '更新',
     refreshing: '更新中',
+    refreshInterval: '更新頻度',
+    refreshIntervalValue: ({ seconds }) => `${seconds}秒`,
+    refreshIntervalAria: '自動更新の頻度',
     pin: '常に手前に表示',
     minimize: 'タスクトレイに最小化',
     close: 'タスクトレイに隠す',
@@ -59,6 +62,9 @@ const I18N = {
     updated: ({ date }) => `Updated ${date}`,
     refresh: 'Refresh',
     refreshing: 'Refreshing',
+    refreshInterval: 'Refresh interval',
+    refreshIntervalValue: ({ seconds }) => `${seconds} sec`,
+    refreshIntervalAria: 'Automatic refresh interval',
     pin: 'Always on top',
     minimize: 'Minimize to tray',
     close: 'Hide in tray',
@@ -93,6 +99,9 @@ const elements = {
   updatedAt: document.querySelector('#updated-at'),
   planLabel: document.querySelector('#plan-label'),
   refreshButton: document.querySelector('#refresh-button'),
+  refreshInterval: document.querySelector('#refresh-interval'),
+  refreshIntervalLabel: document.querySelector('#refresh-interval-label'),
+  refreshIntervalValue: document.querySelector('#refresh-interval-value'),
   langButton: document.querySelector('#lang-button'),
   pinButton: document.querySelector('#pin-button'),
   minimizeButton: document.querySelector('#minimize-button'),
@@ -104,6 +113,12 @@ const elements = {
 let currentSnapshot = null;
 const savedLanguage = localStorage.getItem('quota-glance-language') || localStorage.getItem('codex-usage-language');
 let language = savedLanguage === 'en' ? 'en' : 'ja';
+const savedRefreshValue = localStorage.getItem('quota-glance-refresh-seconds');
+const savedRefreshSeconds = savedRefreshValue === null ? Number.NaN : Number(savedRefreshValue);
+let refreshSeconds = Number.isFinite(savedRefreshSeconds)
+  ? Math.min(60, Math.max(1, Math.round(savedRefreshSeconds)))
+  : 5;
+let refreshIntervalDebounce = null;
 
 const limitElements = {
   fiveHour: {
@@ -127,6 +142,13 @@ const limitElements = {
 function t(key, values = {}) {
   const value = I18N[language][key];
   return typeof value === 'function' ? value(values) : value;
+}
+
+function renderRefreshInterval() {
+  const progress = ((refreshSeconds - 1) / 59) * 100;
+  elements.refreshInterval.value = String(refreshSeconds);
+  elements.refreshInterval.style.setProperty('--refresh-progress', `${progress}%`);
+  elements.refreshIntervalValue.textContent = t('refreshIntervalValue', { seconds: refreshSeconds });
 }
 
 function formatNumber(value) {
@@ -176,6 +198,9 @@ function applyLanguage() {
   elements.langButton.title = t('switchLanguage');
   elements.langButton.setAttribute('aria-label', t('switchLanguage'));
   elements.refreshButton.textContent = t('refresh');
+  elements.refreshIntervalLabel.textContent = t('refreshInterval');
+  elements.refreshInterval.setAttribute('aria-label', t('refreshIntervalAria'));
+  renderRefreshInterval();
   render(currentSnapshot);
 }
 
@@ -235,7 +260,7 @@ function render(snapshot) {
 
   renderLimit(snapshot.fiveHour, limitElements.fiveHour);
   renderLimit(snapshot.weekly, limitElements.weekly);
-  elements.updatedAt.textContent = t('updated', { date: formatDate(snapshot.observedAt) });
+  elements.updatedAt.textContent = t('updated', { date: formatDate(snapshot.checkedAt || snapshot.observedAt) });
   elements.planLabel.textContent = snapshot.planType || 'Codex';
   elements.statusText.textContent = t('synced');
   elements.statusDot.classList.remove('stale');
@@ -253,6 +278,15 @@ async function refresh() {
 }
 
 elements.refreshButton.addEventListener('click', refresh);
+elements.refreshInterval.addEventListener('input', () => {
+  refreshSeconds = Number(elements.refreshInterval.value);
+  localStorage.setItem('quota-glance-refresh-seconds', String(refreshSeconds));
+  renderRefreshInterval();
+  clearTimeout(refreshIntervalDebounce);
+  refreshIntervalDebounce = setTimeout(() => {
+    window.codexUsage.setRefreshInterval(refreshSeconds * 1000);
+  }, 120);
+});
 elements.langButton.addEventListener('click', async () => {
   language = language === 'ja' ? 'en' : 'ja';
   localStorage.setItem('quota-glance-language', language);
@@ -270,10 +304,17 @@ elements.sourceButton.addEventListener('click', () => {
 });
 
 window.codexUsage.onChanged(render);
-window.codexUsage.setLanguage(language).then(() => window.codexUsage.get()).then((snapshot) => {
-  currentSnapshot = snapshot;
+async function initialize() {
+  await window.codexUsage.setLanguage(language);
+  const milliseconds = Number.isFinite(savedRefreshSeconds)
+    ? await window.codexUsage.setRefreshInterval(refreshSeconds * 1000)
+    : await window.codexUsage.getRefreshInterval();
+  refreshSeconds = Math.min(60, Math.max(1, Math.round(milliseconds / 1000)));
+  renderRefreshInterval();
+  currentSnapshot = await window.codexUsage.get();
   applyLanguage();
-});
+}
+initialize();
 window.codexUsage.isPinned().then((pinned) => elements.pinButton.classList.toggle('active', pinned));
 setInterval(() => {
   if (currentSnapshot?.fiveHour?.resetsAt) {
