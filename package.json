@@ -1,0 +1,51 @@
+{
+  "name": "quota-glance",
+  "version": "1.0.0",
+  "description": "A compact, unofficial desktop monitor for locally recorded Codex usage data.",
+  "main": "main.js",
+  "author": {
+    "name": "VOLCANE",
+    "url": "https://volcane.pages.dev/"
+  },
+  "homepage": "https://volcane.pages.dev/",
+  "copyright": "Copyright © 2026 VOLCANE",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test",
+    "pack": "electron-builder --win portable",
+    "release": "npm run pack && node scripts/create-checksums.js"
+  },
+  "devDependencies": {
+    "electron": "^37.2.4",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "dev.volcane.quota-glance",
+    "productName": "Quota Glance",
+    "asar": true,
+    "files": [
+      "main.js",
+      "preload.js",
+      "src/**/*",
+      "renderer/**/*",
+      "assets/**/*",
+      "LICENSE",
+      "NOTICE.md",
+      "PRIVACY.md",
+      "package.json"
+    ],
+    "win": {
+      "icon": "assets/icon.ico",
+      "target": [
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ]
+    },
+    "portable": {
+      "artifactName": "Quota-Glance-Windows-x64.exe"
+    }
+  }
+}

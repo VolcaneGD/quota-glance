@@ -1,0 +1,42 @@
+name: Build and publish release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build release assets
+        run: npm run release
+
+      - name: Publish GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$env:GITHUB_REF_NAME" `
+            "dist/Quota-Glance-Windows-x64.exe" `
+            "dist/SHA256SUMS.txt" `
+            --title "Quota Glance $($env:GITHUB_REF_NAME.TrimStart('v'))" `
+            --notes-file "RELEASE_NOTES.md"

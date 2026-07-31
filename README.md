@@ -1,0 +1,74 @@
+# Quota Glance
+
+Quota Glanceは、Codexがローカルに記録した利用状況を小さな常駐ウィンドウで確認できる、Windows向けの非公式フリーソフトです。
+
+> Quota GlanceはVOLCANEが独立して開発した非公式ツールです。OpenAIによる提供、承認、後援を受けた製品ではありません。
+
+## 主な機能
+
+- 残高・残りクレジット
+- 週間利用上限の使用率と残り割合
+- 次のリセット日時（日本時間）と残り時間
+- 日本語・英語の表示切替と設定保存
+- ファイル変更監視と15秒間隔の自動更新
+- 常に手前に表示
+- 閉じる・最小化でタスクトレイに常駐
+- 使用率に応じたトレイインジケータ
+- 二重起動防止と既存ウィンドウの再表示
+
+## 対応環境
+
+- Windows 10またはWindows 11（64ビット）
+- CodexデスクトップアプリまたはCodex CLIを利用し、ローカルセッションが保存されている環境
+
+## 使い方
+
+1. [GitHub Releases](https://github.com/VolcaneGD/quota-glance/releases/latest)から`Quota-Glance-Windows-x64.exe`をダウンロードします。
+2. 任意の場所から実行します。インストールは不要です。
+3. 右上の`EN`または`JA`で表示言語を切り替えます。
+4. 閉じるボタンまたは最小化ボタンで通知領域に格納します。
+5. 通知領域のインジケータをクリックすると再表示されます。
+
+完全に終了する場合は、通知領域のインジケータを右クリックして`終了`または`Quit`を選択してください。
+
+## データ取得と制約
+
+Quota Glanceは認証トークンやAPIキーを読みません。`%CODEX_HOME%\sessions`、または未設定時の`%USERPROFILE%\.codex\sessions`にCodex自身が保存した最新の`rate_limits`情報だけを抽出します。データを外部へ送信する機能、テレメトリー、広告、解析機能はありません。
+
+表示値は「Codexが最後に利用状況をローカルへ記録した時点」の情報です。独立した公式APIからリアルタイム取得しているわけではありません。Codexを利用していない間にサーバー側だけで値が変わった場合は、次にCodexが応答を受け取ったときに同期されます。また、将来Codexのローカル記録形式が変更された場合、一時的に値を取得できなくなる可能性があります。
+
+## Windowsの警告について
+
+現在の配布版はコード署名されていません。Windows SmartScreenが警告を表示する場合があります。配布ページに掲載されたSHA-256チェックサムとダウンロードファイルの値を照合してください。
+
+## 開発
+
+```powershell
+npm.cmd install
+npm.cmd test
+npm.cmd start
+```
+
+公開用実行ファイルとチェックサムを生成する場合：
+
+```powershell
+npm.cmd run release
+```
+
+## ライセンス
+
+[MIT License](LICENSE) © 2026 VOLCANE
+
+プライバシーについては[PRIVACY.md](PRIVACY.md)、商標と非公式ツールの表示については[NOTICE.md](NOTICE.md)を参照してください。
+
+---
+
+## English
+
+Quota Glance is an unofficial freeware utility for Windows that displays usage information recorded locally by Codex in a compact always-available window.
+
+It shows the remaining credit balance, weekly usage, the next reset time, and a countdown. The interface and tray menu can be switched between Japanese and English. Quota Glance reads local usage snapshots only; it does not read authentication tokens, use analytics, or transmit data.
+
+Quota Glance is independently developed by VOLCANE. It is not provided, endorsed, sponsored, or supported by OpenAI. See [PRIVACY.md](PRIVACY.md), [NOTICE.md](NOTICE.md), and [LICENSE](LICENSE) for details.
+
+Download the latest Windows build from [GitHub Releases](https://github.com/VolcaneGD/quota-glance/releases/latest).
