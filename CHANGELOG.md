@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.3.0 - 2026-08-03
+
+- Changed five-hour and weekly cards to show remaining percentage rather than used percentage.
+- Added remaining-capacity colors: green at 50% or more, yellow from 31% to 49%, and red at 30% or less.
+- Added a saved minimum mode that condenses the balance and both remaining-capacity cards into a small window.
+
 ## 1.2.0 - 2026-08-01
 
 - Added a saved 1–60 second refresh interval slider, defaulting to 5 seconds.

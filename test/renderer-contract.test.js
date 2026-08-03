@@ -14,3 +14,16 @@ test('レンダラーが参照するIDはすべてHTMLに存在する', () => {
     assert.match(html, new RegExp(`id=["']${id}["']`), `#${id} がHTMLに必要です`);
   }
 });
+
+test('残り割合の色分岐とミニマムモードの契約を維持する', () => {
+  const root = path.join(__dirname, '..');
+  const script = fs.readFileSync(path.join(root, 'renderer', 'renderer.js'), 'utf8');
+  const css = fs.readFileSync(path.join(root, 'renderer', 'styles.css'), 'utf8');
+
+  assert.match(script, /if \(remaining <= 30\) return 'critical';/);
+  assert.match(script, /if \(remaining < 50\) return 'warning';/);
+  assert.match(script, /targets\.progressFill\.style\.width = `\$\{remaining\}%`;/);
+  assert.match(script, /setMinimumMode\(!minimumMode\)/);
+  assert.match(css, /\.progress-fill\.critical/);
+  assert.match(css, /\.minimum-mode \.app-shell/);
+});
