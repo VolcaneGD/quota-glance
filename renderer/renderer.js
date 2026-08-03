@@ -13,8 +13,10 @@ const I18N = {
     noBalance: '残高情報なし',
     fiveHourLabel: '5時間利用上限',
     weeklyLabel: '週間利用上限',
-    used: ({ value }) => `${value}% 使用`,
     remaining: ({ value }) => `残り ${value}%`,
+    remainingGood: '余裕あり',
+    remainingWarning: '注意',
+    remainingCritical: '残りわずか',
     noInfo: '情報なし',
     resetPrefix: 'リセット',
     noReset: 'リセット日時は取得できません',
@@ -35,6 +37,8 @@ const I18N = {
     fiveHourAria: '5時間利用量',
     weeklyAria: '週間利用量',
     switchLanguage: 'Switch to English',
+    enterMinimumMode: 'ミニマムモードに切り替え',
+    exitMinimumMode: '通常表示に戻す',
   },
   en: {
     loading: 'Loading',
@@ -50,8 +54,10 @@ const I18N = {
     noBalance: 'Balance unavailable',
     fiveHourLabel: '5-hour usage limit',
     weeklyLabel: 'Weekly usage limit',
-    used: ({ value }) => `${value}% used`,
     remaining: ({ value }) => `${value}% left`,
+    remainingGood: 'Comfortable',
+    remainingWarning: 'Caution',
+    remainingCritical: 'Low left',
     noInfo: 'No data',
     resetPrefix: 'Resets',
     noReset: 'Reset time unavailable',
@@ -72,6 +78,8 @@ const I18N = {
     fiveHourAria: '5-hour usage',
     weeklyAria: 'Weekly usage',
     switchLanguage: '日本語に切り替える',
+    enterMinimumMode: 'Switch to minimum mode',
+    exitMinimumMode: 'Return to full view',
   },
 };
 
@@ -99,6 +107,7 @@ const elements = {
   updatedAt: document.querySelector('#updated-at'),
   planLabel: document.querySelector('#plan-label'),
   refreshButton: document.querySelector('#refresh-button'),
+  minimumModeButton: document.querySelector('#minimum-mode-button'),
   refreshInterval: document.querySelector('#refresh-interval'),
   refreshIntervalLabel: document.querySelector('#refresh-interval-label'),
   refreshIntervalValue: document.querySelector('#refresh-interval-value'),
@@ -119,6 +128,7 @@ let refreshSeconds = Number.isFinite(savedRefreshSeconds)
   ? Math.min(60, Math.max(1, Math.round(savedRefreshSeconds)))
   : 5;
 let refreshIntervalDebounce = null;
+let minimumMode = false;
 
 const limitElements = {
   fiveHour: {
@@ -149,6 +159,21 @@ function renderRefreshInterval() {
   elements.refreshInterval.value = String(refreshSeconds);
   elements.refreshInterval.style.setProperty('--refresh-progress', `${progress}%`);
   elements.refreshIntervalValue.textContent = t('refreshIntervalValue', { seconds: refreshSeconds });
+}
+
+function limitState(remaining) {
+  if (remaining <= 30) return 'critical';
+  if (remaining < 50) return 'warning';
+  return 'good';
+}
+
+function applyMinimumMode() {
+  document.documentElement.classList.toggle('minimum-mode', minimumMode);
+  elements.minimumModeButton.classList.toggle('active', minimumMode);
+  elements.minimumModeButton.textContent = minimumMode ? 'FULL' : 'MIN';
+  const label = t(minimumMode ? 'exitMinimumMode' : 'enterMinimumMode');
+  elements.minimumModeButton.title = label;
+  elements.minimumModeButton.setAttribute('aria-label', label);
 }
 
 function formatNumber(value) {
@@ -201,29 +226,30 @@ function applyLanguage() {
   elements.refreshIntervalLabel.textContent = t('refreshInterval');
   elements.refreshInterval.setAttribute('aria-label', t('refreshIntervalAria'));
   renderRefreshInterval();
+  applyMinimumMode();
   render(currentSnapshot);
 }
 
 function renderLimit(limit, targets) {
-  const used = limit?.usedPercent;
   const remaining = limit?.remainingPercent;
-  if (used != null) {
-    const roundedUsed = Math.round(used);
+  if (remaining != null) {
     const roundedRemaining = Math.round(remaining);
-    targets.summary.textContent = t('used', { value: roundedUsed });
-    targets.badge.textContent = t('remaining', { value: roundedRemaining });
-    targets.progressFill.style.width = `${used}%`;
-    targets.progressTrack.setAttribute('aria-valuenow', String(used));
-    const warning = used >= 85;
-    targets.badge.classList.toggle('warn', warning);
-    targets.progressFill.classList.toggle('warn', warning);
+    const state = limitState(roundedRemaining);
+    targets.summary.textContent = t('remaining', { value: roundedRemaining });
+    targets.badge.textContent = t(`remaining${state[0].toUpperCase()}${state.slice(1)}`);
+    targets.progressFill.style.width = `${remaining}%`;
+    targets.progressTrack.setAttribute('aria-valuenow', String(remaining));
+    for (const className of ['good', 'warning', 'critical']) {
+      targets.badge.classList.toggle(className, className === state);
+      targets.progressFill.classList.toggle(className, className === state);
+    }
   } else {
     targets.summary.textContent = '—';
     targets.badge.textContent = t('noInfo');
     targets.progressFill.style.width = '0%';
     targets.progressTrack.setAttribute('aria-valuenow', '0');
-    targets.badge.classList.remove('warn');
-    targets.progressFill.classList.remove('warn');
+    targets.badge.classList.remove('good', 'warning', 'critical');
+    targets.progressFill.classList.remove('good', 'warning', 'critical');
   }
 
   targets.resetTime.textContent = limit?.resetsAt
@@ -278,6 +304,11 @@ async function refresh() {
 }
 
 elements.refreshButton.addEventListener('click', refresh);
+elements.minimumModeButton.addEventListener('click', async () => {
+  minimumMode = await window.codexUsage.setMinimumMode(!minimumMode);
+  localStorage.setItem('quota-glance-minimum-mode', String(minimumMode));
+  applyMinimumMode();
+});
 elements.refreshInterval.addEventListener('input', () => {
   refreshSeconds = Number(elements.refreshInterval.value);
   localStorage.setItem('quota-glance-refresh-seconds', String(refreshSeconds));
@@ -312,6 +343,10 @@ async function initialize() {
   refreshSeconds = Math.min(60, Math.max(1, Math.round(milliseconds / 1000)));
   renderRefreshInterval();
   currentSnapshot = await window.codexUsage.get();
+  const savedMinimumMode = localStorage.getItem('quota-glance-minimum-mode') === 'true';
+  minimumMode = savedMinimumMode
+    ? await window.codexUsage.setMinimumMode(true)
+    : await window.codexUsage.getMinimumMode();
   applyLanguage();
 }
 initialize();

@@ -8,6 +8,8 @@ contextBridge.exposeInMainWorld('codexUsage', {
   setLanguage: (language) => ipcRenderer.invoke('app:set-language', language),
   isPinned: () => ipcRenderer.invoke('window:is-pinned'),
   togglePin: () => ipcRenderer.invoke('window:toggle-pin'),
+  getMinimumMode: () => ipcRenderer.invoke('window:get-minimum-mode'),
+  setMinimumMode: (enabled) => ipcRenderer.invoke('window:set-minimum-mode', enabled),
   minimize: () => ipcRenderer.send('window:minimize'),
   close: () => ipcRenderer.send('window:close'),
   revealSource: (sourcePath) => ipcRenderer.send('source:reveal', sourcePath),

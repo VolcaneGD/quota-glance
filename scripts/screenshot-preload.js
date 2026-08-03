@@ -1,6 +1,7 @@
 const { contextBridge } = require('electron');
 
 const now = Date.now();
+const criticalPreview = process.argv.includes('--critical');
 const snapshot = {
   observedAt: new Date(now).toISOString(),
   checkedAt: new Date(now).toISOString(),
@@ -14,8 +15,8 @@ const snapshot = {
     windowMinutes: 300,
   },
   weekly: {
-    usedPercent: 68,
-    remainingPercent: 32,
+    usedPercent: criticalPreview ? 72 : 68,
+    remainingPercent: criticalPreview ? 28 : 32,
     resetsAt: new Date(now + (3 * 24 + 7) * 60 * 60 * 1000).toISOString(),
     windowMinutes: 10080,
   },
@@ -31,6 +32,7 @@ const snapshot = {
 };
 
 let refreshIntervalMs = 5_000;
+let minimumMode = false;
 
 contextBridge.exposeInMainWorld('codexUsage', {
   get: async () => snapshot,
@@ -43,6 +45,11 @@ contextBridge.exposeInMainWorld('codexUsage', {
   setLanguage: async (language) => language,
   isPinned: async () => true,
   togglePin: async () => true,
+  getMinimumMode: async () => minimumMode,
+  setMinimumMode: async (enabled) => {
+    minimumMode = enabled === true;
+    return minimumMode;
+  },
   minimize: () => {},
   close: () => {},
   revealSource: () => {},

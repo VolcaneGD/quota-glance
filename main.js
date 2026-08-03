@@ -6,6 +6,8 @@ let mainWindow;
 let tray;
 let isQuitting = false;
 let uiLanguage = 'ja';
+let isMinimumMode = false;
+let standardWindowBounds = { width: 372, height: 604 };
 
 const hasSingleInstanceLock = app.requestSingleInstanceLock();
 if (!hasSingleInstanceLock) {
@@ -91,6 +93,23 @@ function createWindow() {
   });
 }
 
+function setMinimumMode(enabled) {
+  isMinimumMode = enabled === true;
+  if (isMinimumMode) {
+    standardWindowBounds = mainWindow.getBounds();
+    mainWindow.setMinimumSize(292, 258);
+    mainWindow.setSize(310, 280, true);
+  } else {
+    mainWindow.setMinimumSize(340, 556);
+    mainWindow.setSize(
+      Math.max(372, standardWindowBounds.width),
+      Math.max(604, standardWindowBounds.height),
+      true,
+    );
+  }
+  return isMinimumMode;
+}
+
 function createTray() {
   tray = new Tray(makeTrayImage());
   tray.setToolTip('Quota Glance');
@@ -163,6 +182,8 @@ ipcMain.handle('usage:get', () => reader.getSnapshot());
 ipcMain.handle('usage:refresh', () => reader.refresh());
 ipcMain.handle('usage:get-refresh-interval', () => reader.refreshIntervalMs);
 ipcMain.handle('usage:set-refresh-interval', (_event, milliseconds) => reader.setRefreshInterval(milliseconds));
+ipcMain.handle('window:get-minimum-mode', () => isMinimumMode);
+ipcMain.handle('window:set-minimum-mode', (_event, enabled) => setMinimumMode(enabled));
 ipcMain.handle('window:toggle-pin', () => {
   const pinned = !mainWindow.isAlwaysOnTop();
   mainWindow.setAlwaysOnTop(pinned, 'floating');
