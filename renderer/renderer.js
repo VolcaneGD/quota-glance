@@ -132,6 +132,7 @@ let refreshSeconds = Number.isFinite(savedRefreshSeconds)
 let refreshIntervalDebounce = null;
 let minimumMode = false;
 let opacity = 1;
+let lastSystemMetrics = {};
 
 const limitElements = {
   fiveHour: {
@@ -173,7 +174,16 @@ function renderOpacity() {
 }
 
 function renderMetrics(metrics = {}) {
-  for (const [key, suffix, kind] of [['gpu','%','usage'],['cpu','%','usage'],['mem','%','usage'],['temp','°C','temp']]) { const el = elements[`metric${key[0].toUpperCase()}${key.slice(1)}`]; const value = metrics[key]; el.textContent = Number.isFinite(value) ? `${Math.round(value)}${suffix}` : '--'; el.className = Number.isFinite(value) ? (value >= (kind === 'temp' ? 80 : 80) ? 'critical' : value >= (kind === 'temp' ? 60 : 50) ? 'warning' : 'good') : ''; }
+  for (const [key, suffix, kind] of [['gpu', '%', 'usage'], ['cpu', '%', 'usage'], ['mem', '%', 'usage'], ['temp', '°C', 'temp']]) {
+    const el = elements[`metric${key[0].toUpperCase()}${key.slice(1)}`];
+    const value = metrics[key];
+    if (Number.isFinite(value)) lastSystemMetrics[key] = value;
+    const displayedValue = Number.isFinite(value) ? value : lastSystemMetrics[key];
+    el.textContent = Number.isFinite(displayedValue) ? `${Math.round(displayedValue)}${suffix}` : '--';
+    el.className = Number.isFinite(displayedValue)
+      ? (displayedValue >= (kind === 'temp' ? 80 : 80) ? 'critical' : displayedValue >= (kind === 'temp' ? 60 : 50) ? 'warning' : 'good')
+      : '';
+  }
 }
 
 function limitState(remaining) {

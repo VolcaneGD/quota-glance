@@ -26,6 +26,14 @@ test('opacity slider keeps its own visual progress', () => {
   assert.match(css, /var\(--range-progress\)/);
 });
 
+test('system metric display retains the last successful value', () => {
+  const root = path.join(__dirname, '..');
+  const script = fs.readFileSync(path.join(root, 'renderer', 'renderer.js'), 'utf8');
+
+  assert.match(script, /let lastSystemMetrics = \{\};/);
+  assert.match(script, /const displayedValue = Number\.isFinite\(value\) \? value : lastSystemMetrics\[key\];/);
+});
+
 test('残り割合の色分岐とミニマムモードの契約を維持する', () => {
   const root = path.join(__dirname, '..');
   const script = fs.readFileSync(path.join(root, 'renderer', 'renderer.js'), 'utf8');

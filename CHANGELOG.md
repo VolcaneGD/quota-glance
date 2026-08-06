@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.4.2 - 2026-08-06
+
+- Kept the last successfully collected system metric when a later sample is unavailable.
+- Switched CPU and memory collection to independent Windows CIM queries, so one failed metric does not discard the other.
+
 ## 1.4.1 - 2026-08-06
 
 - Fixed the opacity range slider so its track fill always follows its own thumb.

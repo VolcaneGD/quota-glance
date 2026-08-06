@@ -1,12 +1,10 @@
-# Quota Glance 1.4.1
+# Quota Glance 1.4.2
 
-This maintenance release ships the fixes already available in the repository source as a new Windows download.
+## System-metric reliability
 
-## Changes
-
-- Fixed the opacity slider track so it matches the thumb position.
-- Kept GPU, CPU, MEM, and TEMP visible in Minimum Mode.
-- Increased the compact window height to prevent the weekly quota card from being clipped.
+- CPU and memory are now collected through separate Windows CIM queries.
+- If a later CPU, MEM, GPU, or TEMP sample is unavailable, the app retains the last successfully collected value instead of replacing it with `--`.
+- A metric remains `--` only until its first successful collection.
 
 ## Downloads
 
