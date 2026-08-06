@@ -1,6 +1,8 @@
 const path = require('node:path');
 const { app, BrowserWindow, ipcMain, Menu, nativeImage, shell, Tray } = require('electron');
 const { UsageReader } = require('./src/usage-reader');
+const { collectSystemMetrics } = require('./src/system-metrics');
+const { loadWindowState, saveWindowState } = require('./src/window-state');
 
 let mainWindow;
 let tray;
@@ -8,6 +10,8 @@ let isQuitting = false;
 let uiLanguage = 'ja';
 let isMinimumMode = false;
 let standardWindowBounds = { width: 372, height: 604 };
+let preferences;
+let preferencesPath;
 
 const hasSingleInstanceLock = app.requestSingleInstanceLock();
 if (!hasSingleInstanceLock) {
@@ -61,9 +65,12 @@ function trayCopy() {
 }
 
 function createWindow() {
+  const bounds = preferences.bounds || { width: 372, height: 604 };
   mainWindow = new BrowserWindow({
-    width: 372,
-    height: 604,
+    x: bounds.x,
+    y: bounds.y,
+    width: Math.max(372, bounds.width),
+    height: Math.max(604, bounds.height),
     minWidth: 340,
     minHeight: 556,
     maxWidth: 460,
@@ -83,6 +90,7 @@ function createWindow() {
   });
 
   mainWindow.setAlwaysOnTop(true, 'floating');
+  mainWindow.setOpacity(preferences.opacity);
   mainWindow.loadFile(path.join(__dirname, 'renderer', 'index.html'));
   mainWindow.once('ready-to-show', () => mainWindow.show());
   mainWindow.on('close', (event) => {
@@ -91,6 +99,17 @@ function createWindow() {
       mainWindow.hide();
     }
   });
+  mainWindow.on('resize', savePreferences);
+  mainWindow.on('move', savePreferences);
+}
+
+function savePreferences() {
+  if (!mainWindow || mainWindow.isDestroyed() || !preferencesPath) return;
+  preferences.bounds = mainWindow.getBounds();
+  preferences.minimumMode = isMinimumMode;
+  preferences.refreshIntervalMs = reader.refreshIntervalMs;
+  preferences.language = uiLanguage;
+  saveWindowState(preferencesPath, preferences);
 }
 
 function setMinimumMode(enabled) {
@@ -168,7 +187,12 @@ if (hasSingleInstanceLock) {
   });
 
   app.whenReady().then(async () => {
+    preferencesPath = path.join(app.getPath('userData'), 'quota-glance-state.json');
+    preferences = loadWindowState(preferencesPath);
+    uiLanguage = preferences.language;
+    reader.setRefreshInterval(preferences.refreshIntervalMs);
     createWindow();
+    if (preferences.minimumMode) setMinimumMode(true);
     createTray();
     reader.on('change', publish);
     await reader.start();
@@ -181,9 +205,15 @@ app.on('before-quit', () => { isQuitting = true; reader.stop(); });
 ipcMain.handle('usage:get', () => reader.getSnapshot());
 ipcMain.handle('usage:refresh', () => reader.refresh());
 ipcMain.handle('usage:get-refresh-interval', () => reader.refreshIntervalMs);
-ipcMain.handle('usage:set-refresh-interval', (_event, milliseconds) => reader.setRefreshInterval(milliseconds));
+ipcMain.handle('usage:set-refresh-interval', (_event, milliseconds) => { const value = reader.setRefreshInterval(milliseconds); preferences.refreshIntervalMs = value; savePreferences(); return value; });
+ipcMain.handle('system:get-metrics', () => collectSystemMetrics());
+ipcMain.handle('app:get-preferences', () => preferences);
+ipcMain.handle('app:set-opacity', (_event, opacity) => {
+  preferences.opacity = Math.min(1, Math.max(0.4, Number(opacity) || 1));
+  mainWindow.setOpacity(preferences.opacity); savePreferences(); return preferences.opacity;
+});
 ipcMain.handle('window:get-minimum-mode', () => isMinimumMode);
-ipcMain.handle('window:set-minimum-mode', (_event, enabled) => setMinimumMode(enabled));
+ipcMain.handle('window:set-minimum-mode', (_event, enabled) => { const value = setMinimumMode(enabled); savePreferences(); return value; });
 ipcMain.handle('window:toggle-pin', () => {
   const pinned = !mainWindow.isAlwaysOnTop();
   mainWindow.setAlwaysOnTop(pinned, 'floating');
@@ -192,6 +222,8 @@ ipcMain.handle('window:toggle-pin', () => {
 ipcMain.handle('window:is-pinned', () => mainWindow.isAlwaysOnTop());
 ipcMain.handle('app:set-language', (_event, language) => {
   uiLanguage = language === 'en' ? 'en' : 'ja';
+  preferences.language = uiLanguage;
+  savePreferences();
   updateTrayMenu();
   updateTray(reader.getSnapshot());
   return uiLanguage;

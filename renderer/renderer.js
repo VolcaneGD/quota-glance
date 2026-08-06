@@ -108,6 +108,8 @@ const elements = {
   planLabel: document.querySelector('#plan-label'),
   refreshButton: document.querySelector('#refresh-button'),
   minimumModeButton: document.querySelector('#minimum-mode-button'),
+  opacity: document.querySelector('#opacity'), opacityLabel: document.querySelector('#opacity-label'), opacityValue: document.querySelector('#opacity-value'),
+  metricGpu: document.querySelector('#metric-gpu'), metricCpu: document.querySelector('#metric-cpu'), metricMem: document.querySelector('#metric-mem'), metricTemp: document.querySelector('#metric-temp'),
   refreshInterval: document.querySelector('#refresh-interval'),
   refreshIntervalLabel: document.querySelector('#refresh-interval-label'),
   refreshIntervalValue: document.querySelector('#refresh-interval-value'),
@@ -129,6 +131,7 @@ let refreshSeconds = Number.isFinite(savedRefreshSeconds)
   : 5;
 let refreshIntervalDebounce = null;
 let minimumMode = false;
+let opacity = 1;
 
 const limitElements = {
   fiveHour: {
@@ -159,6 +162,9 @@ function renderRefreshInterval() {
   elements.refreshInterval.value = String(refreshSeconds);
   elements.refreshInterval.style.setProperty('--refresh-progress', `${progress}%`);
   elements.refreshIntervalValue.textContent = t('refreshIntervalValue', { seconds: refreshSeconds });
+}
+function renderMetrics(metrics = {}) {
+  for (const [key, suffix, kind] of [['gpu','%','usage'],['cpu','%','usage'],['mem','%','usage'],['temp','°C','temp']]) { const el = elements[`metric${key[0].toUpperCase()}${key.slice(1)}`]; const value = metrics[key]; el.textContent = Number.isFinite(value) ? `${Math.round(value)}${suffix}` : '--'; el.className = Number.isFinite(value) ? (value >= (kind === 'temp' ? 80 : 80) ? 'critical' : value >= (kind === 'temp' ? 60 : 50) ? 'warning' : 'good') : ''; }
 }
 
 function limitState(remaining) {
@@ -225,6 +231,7 @@ function applyLanguage() {
   elements.refreshButton.textContent = t('refresh');
   elements.refreshIntervalLabel.textContent = t('refreshInterval');
   elements.refreshInterval.setAttribute('aria-label', t('refreshIntervalAria'));
+  elements.opacityLabel.textContent = language === 'ja' ? '透明度' : 'Opacity';
   renderRefreshInterval();
   applyMinimumMode();
   render(currentSnapshot);
@@ -304,6 +311,7 @@ async function refresh() {
 }
 
 elements.refreshButton.addEventListener('click', refresh);
+elements.opacity.addEventListener('input', () => { opacity = Number(elements.opacity.value) / 100; elements.opacityValue.textContent = `${Math.round(opacity * 100)}%`; window.codexUsage.setOpacity(opacity); });
 elements.minimumModeButton.addEventListener('click', async () => {
   minimumMode = await window.codexUsage.setMinimumMode(!minimumMode);
   localStorage.setItem('quota-glance-minimum-mode', String(minimumMode));
@@ -343,6 +351,8 @@ async function initialize() {
   refreshSeconds = Math.min(60, Math.max(1, Math.round(milliseconds / 1000)));
   renderRefreshInterval();
   currentSnapshot = await window.codexUsage.get();
+  const preferences = await window.codexUsage.getPreferences(); opacity = preferences.opacity; elements.opacity.value = String(Math.round(opacity * 100)); elements.opacityValue.textContent = `${Math.round(opacity * 100)}%`;
+  renderMetrics(await window.codexUsage.getSystemMetrics());
   const savedMinimumMode = localStorage.getItem('quota-glance-minimum-mode') === 'true';
   minimumMode = savedMinimumMode
     ? await window.codexUsage.setMinimumMode(true)
@@ -359,3 +369,4 @@ setInterval(() => {
     elements.weeklyCountdown.textContent = formatCountdown(currentSnapshot.weekly.resetsAt);
   }
 }, 30_000);
+setInterval(async () => renderMetrics(await window.codexUsage.getSystemMetrics()), 5_000);

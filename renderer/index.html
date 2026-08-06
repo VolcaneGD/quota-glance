@@ -26,6 +26,10 @@
         </div>
       </header>
 
+      <section class="status-strip" aria-label="System status">
+        <span>GPU <b id="metric-gpu">--</b></span><span>CPU <b id="metric-cpu">--</b></span><span>MEM <b id="metric-mem">--</b></span><span>TEMP <b id="metric-temp">--</b></span>
+      </section>
+
       <section class="balance-card">
         <p id="balance-label" class="eyebrow">残高・残りクレジット</p>
         <div class="balance-row">
@@ -75,6 +79,8 @@
           <output id="refresh-interval-value" for="refresh-interval">5秒</output>
         </div>
         <input id="refresh-interval" type="range" min="1" max="60" step="1" value="5" aria-label="更新頻度" />
+        <div class="refresh-settings-heading opacity-heading"><label id="opacity-label" for="opacity">透明度</label><output id="opacity-value">100%</output></div>
+        <input id="opacity" type="range" min="40" max="100" step="1" value="100" aria-label="透明度" />
       </section>
 
       <footer>
