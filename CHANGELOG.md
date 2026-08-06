@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.4.0 - 2026-08-06
+
+- Added compact GPU, CPU, memory, and NVIDIA temperature monitoring.
+- Added color-coded metric values and `--` unavailable states.
+- Added a 40–100% window opacity setting and persistent window preferences.
+- Reduced Compact View type and padding.
+
 ## 1.3.0 - 2026-08-03
 
 - Changed five-hour and weekly cards to show remaining percentage rather than used percentage.
