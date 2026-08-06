@@ -1,21 +1,20 @@
-# Quota Glance 1.4.0
+# Quota Glance 1.4.1
 
-Quota Glanceは、Codexの残りクレジット、5時間使用率、週間使用率、それぞれの次回リセット日時をコンパクトに確認できるWindows向け非公式フリーソフトです。
+This maintenance release ships the fixes already available in the repository source as a new Windows download.
 
-## 1.4.0の変更点
+## Changes
 
-- GPU / CPU / MEM / TEMPを小さくリアルタイム表示
-- 取得できない項目は`--`表示、状態に応じて緑・黄・赤で表示
-- ウィンドウ透明度と、位置・サイズ・言語・更新頻度・透明度の保存に対応
+- Fixed the opacity slider track so it matches the thumb position.
+- Kept GPU, CPU, MEM, and TEMP visible in Minimum Mode.
+- Increased the compact window height to prevent the weekly quota card from being clipped.
 
-## ダウンロード
+## Downloads
 
-- `Quota-Glance-Windows-x64.exe` — インストール不要のポータブル版
-- `SHA256SUMS.txt` — ダウンロードファイル確認用チェックサム
+- `Quota-Glance-Windows-x64.exe` — portable Windows executable
+- `SHA256SUMS.txt` — SHA-256 checksum
 
-## 注意事項
+## Notes
 
-- Windows 10/11 64ビット版に対応しています。
-- 未署名のため、Windows SmartScreenの警告が表示される場合があります。
-- Codexのローカル記録形式に依存するため、将来のCodex更新後に一時的に取得できなくなる場合があります。
-- 本ソフトはOpenAIの公式製品ではありません。
+- Supports Windows 10 and Windows 11 (64-bit).
+- Windows SmartScreen may show a warning because this is an unsigned free application.
+- Quota Glance only reads local Codex usage records; it does not use an OpenAI API key.
