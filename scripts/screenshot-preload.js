@@ -33,6 +33,7 @@ const snapshot = {
 
 let refreshIntervalMs = 5_000;
 let minimumMode = false;
+let opacity = 1;
 
 contextBridge.exposeInMainWorld('codexUsage', {
   get: async () => snapshot,
@@ -50,6 +51,18 @@ contextBridge.exposeInMainWorld('codexUsage', {
     minimumMode = enabled === true;
     return minimumMode;
   },
+  getPreferences: async () => ({
+    bounds: null,
+    language: 'ja',
+    refreshIntervalMs,
+    opacity,
+    minimumMode,
+  }),
+  setOpacity: async (value) => {
+    opacity = value;
+    return opacity;
+  },
+  getSystemMetrics: async () => ({ gpu: 27, cpu: 13, mem: 65, temp: 59 }),
   minimize: () => {},
   close: () => {},
   revealSource: () => {},

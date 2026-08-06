@@ -160,9 +160,18 @@ function t(key, values = {}) {
 function renderRefreshInterval() {
   const progress = ((refreshSeconds - 1) / 59) * 100;
   elements.refreshInterval.value = String(refreshSeconds);
-  elements.refreshInterval.style.setProperty('--refresh-progress', `${progress}%`);
+  elements.refreshInterval.style.setProperty('--range-progress', `${progress}%`);
   elements.refreshIntervalValue.textContent = t('refreshIntervalValue', { seconds: refreshSeconds });
 }
+
+function renderOpacity() {
+  const percent = Math.round(opacity * 100);
+  const progress = ((percent - 40) / 60) * 100;
+  elements.opacity.value = String(percent);
+  elements.opacity.style.setProperty('--range-progress', `${progress}%`);
+  elements.opacityValue.textContent = `${percent}%`;
+}
+
 function renderMetrics(metrics = {}) {
   for (const [key, suffix, kind] of [['gpu','%','usage'],['cpu','%','usage'],['mem','%','usage'],['temp','°C','temp']]) { const el = elements[`metric${key[0].toUpperCase()}${key.slice(1)}`]; const value = metrics[key]; el.textContent = Number.isFinite(value) ? `${Math.round(value)}${suffix}` : '--'; el.className = Number.isFinite(value) ? (value >= (kind === 'temp' ? 80 : 80) ? 'critical' : value >= (kind === 'temp' ? 60 : 50) ? 'warning' : 'good') : ''; }
 }
@@ -311,7 +320,11 @@ async function refresh() {
 }
 
 elements.refreshButton.addEventListener('click', refresh);
-elements.opacity.addEventListener('input', () => { opacity = Number(elements.opacity.value) / 100; elements.opacityValue.textContent = `${Math.round(opacity * 100)}%`; window.codexUsage.setOpacity(opacity); });
+elements.opacity.addEventListener('input', () => {
+  opacity = Number(elements.opacity.value) / 100;
+  renderOpacity();
+  window.codexUsage.setOpacity(opacity);
+});
 elements.minimumModeButton.addEventListener('click', async () => {
   minimumMode = await window.codexUsage.setMinimumMode(!minimumMode);
   localStorage.setItem('quota-glance-minimum-mode', String(minimumMode));
@@ -351,7 +364,9 @@ async function initialize() {
   refreshSeconds = Math.min(60, Math.max(1, Math.round(milliseconds / 1000)));
   renderRefreshInterval();
   currentSnapshot = await window.codexUsage.get();
-  const preferences = await window.codexUsage.getPreferences(); opacity = preferences.opacity; elements.opacity.value = String(Math.round(opacity * 100)); elements.opacityValue.textContent = `${Math.round(opacity * 100)}%`;
+  const preferences = await window.codexUsage.getPreferences();
+  opacity = preferences.opacity;
+  renderOpacity();
   renderMetrics(await window.codexUsage.getSystemMetrics());
   const savedMinimumMode = localStorage.getItem('quota-glance-minimum-mode') === 'true';
   minimumMode = savedMinimumMode

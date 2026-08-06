@@ -128,7 +128,7 @@ button { font: inherit; }
 .refresh-settings label { color: var(--muted); font-size: 10px; font-weight: 650; }
 .refresh-settings output { color: var(--accent); font-size: 10px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .refresh-settings input[type="range"] {
-  --refresh-progress: 6.78%;
+  --range-progress: 0%;
   appearance: none;
   display: block;
   width: 100%;
@@ -137,7 +137,7 @@ button { font: inherit; }
   border: 0;
   border-radius: 99px;
   outline: 0;
-  background: linear-gradient(90deg, var(--accent) 0 var(--refresh-progress), rgba(255,255,255,0.09) var(--refresh-progress) 100%);
+  background: linear-gradient(90deg, var(--accent) 0 var(--range-progress), rgba(255,255,255,0.09) var(--range-progress) 100%);
   cursor: pointer;
 }
 .refresh-settings input[type="range"]::-webkit-slider-thumb {
@@ -171,7 +171,6 @@ footer { display: flex; align-items: center; gap: 8px; margin-top: 0; }
 .error-message { margin: -3px 2px 0; color: var(--warn); font-size: 9px; line-height: 1.45; }
 
 .minimum-mode .app-shell { gap: 8px; padding: 10px; }
-.minimum-mode .status-strip { display:none; }
 .minimum-mode .titlebar { min-height: 36px; padding: 0 1px 2px; }
 .minimum-mode .brand { gap: 8px; }
 .minimum-mode .brand-mark { width: 26px; height: 26px; padding: 6px; border-radius: 8px; }

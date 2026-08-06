@@ -14,7 +14,7 @@ app.whenReady().then(async () => {
   const criticalPreview = process.argv.includes('--critical');
   const window = new BrowserWindow({
     width: minimumMode ? 310 : 372,
-    height: minimumMode ? 280 : 604,
+    height: minimumMode ? 310 : 604,
     show: false,
     frame: false,
     backgroundColor: '#0b1210',
@@ -58,6 +58,18 @@ app.whenReady().then(async () => {
     };
   })()`);
   if (interaction.stored !== '12') throw new Error('Refresh slider did not persist its value');
+  const opacityInteraction = await window.webContents.executeJavaScript(`(() => {
+    const slider = document.querySelector('#opacity');
+    slider.value = '85';
+    slider.dispatchEvent(new Event('input', { bubbles: true }));
+    return {
+      label: document.querySelector('#opacity-value').textContent,
+      progress: slider.style.getPropertyValue('--range-progress'),
+    };
+  })()`);
+  if (opacityInteraction.label !== '85%' || opacityInteraction.progress !== '75%') {
+    throw new Error(`Opacity slider visual progress did not match: ${JSON.stringify(opacityInteraction)}`);
+  }
   const minimumInteraction = await window.webContents.executeJavaScript(`(async () => {
     const button = document.querySelector('#minimum-mode-button');
     const wasMinimum = document.documentElement.classList.contains('minimum-mode');
@@ -82,7 +94,7 @@ app.whenReady().then(async () => {
   const output = path.join(__dirname, '..', 'assets', `quota-glance-screenshot-${language}${suffix}.png`);
   await fs.writeFile(output, image.toPNG());
   console.log(output);
-  console.log(JSON.stringify({ defaultInterval, stateCheck, sliderInteraction: interaction, minimumInteraction }));
+  console.log(JSON.stringify({ defaultInterval, stateCheck, sliderInteraction: interaction, opacityInteraction, minimumInteraction }));
   clearTimeout(captureTimeout);
   window.destroy();
   app.exit(0);

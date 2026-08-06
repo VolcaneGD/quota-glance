@@ -116,8 +116,8 @@ function setMinimumMode(enabled) {
   isMinimumMode = enabled === true;
   if (isMinimumMode) {
     standardWindowBounds = mainWindow.getBounds();
-    mainWindow.setMinimumSize(292, 258);
-    mainWindow.setSize(310, 280, true);
+    mainWindow.setMinimumSize(292, 290);
+    mainWindow.setSize(310, 310, true);
   } else {
     mainWindow.setMinimumSize(340, 556);
     mainWindow.setSize(
