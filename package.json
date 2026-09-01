@@ -1,6 +1,6 @@
 {
   "name": "quota-glance",
-  "version": "1.4.2",
+  "version": "1.4.3",
   "description": "A compact, unofficial desktop monitor for locally recorded Codex usage data.",
   "main": "main.js",
   "author": {
@@ -18,7 +18,7 @@
     "update-reset-feed": "node scripts/update-reset-feed.js"
   },
   "devDependencies": {
-    "electron": "^37.2.4",
+    "electron": "37.10.3",
     "electron-builder": "^26.0.12"
   },
   "build": {

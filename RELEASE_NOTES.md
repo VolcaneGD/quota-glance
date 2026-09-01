@@ -1,4 +1,4 @@
-# Quota Glance — Unreleased
+# Quota Glance 1.4.3
 
 ## Reset advisory feed
 
@@ -6,7 +6,6 @@
 - Only posts from the preceding three days are eligible for the public feed.
 - The card closes automatically when the weekly quota returns to 100%, or after 48 hours without a weekly-quota change.
 - The reset-advisory card is available in both standard and minimum modes.
-- Added C-drive free-space percentage to the compact system-status strip.
 
 # Quota Glance 1.4.2
 
