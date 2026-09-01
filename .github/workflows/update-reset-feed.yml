@@ -22,7 +22,13 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run update-reset-feed
+      - name: Update public feed when configured
+        run: |
+          if [ -z "$X_BEARER_TOKEN" ]; then
+            echo "No X_BEARER_TOKEN configured; keeping the public feed empty."
+            exit 0
+          fi
+          npm run update-reset-feed
         env:
           X_BEARER_TOKEN: ${{ secrets.X_BEARER_TOKEN }}
       - name: Commit feed update
