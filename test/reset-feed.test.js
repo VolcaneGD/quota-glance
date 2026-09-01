@@ -2,7 +2,6 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const {
   DEFAULT_ALERT_STATE,
-  getWeeklyQuotaSignature,
   normalizeFeed,
   reconcileAlertState,
   selectDisplayEvent,
@@ -29,31 +28,26 @@ test('alert hides immediately when weekly remaining reaches 100 percent', () => 
   assert.deepEqual(result.alertState.dismissedEventIds, ['event-1']);
 });
 
-test('alert hides after two days when the weekly quota did not change', () => {
+test('alert hides after 48 hours even when the weekly quota changed', () => {
   const weekly = { remainingPercent: 42, usedPercent: 58, resetsAt: '2026-09-07T08:00:00.000Z' };
-  const baseline = getWeeklyQuotaSignature(weekly);
   const result = reconcileAlertState(EVENT, weekly, {
     eventId: EVENT.id,
     displayedAt: '2026-09-01T10:00:00.000Z',
-    baselineWeeklySignature: baseline,
-    weeklyChanged: false,
     dismissedEventIds: [],
   }, '2026-09-03T10:00:00.000Z');
 
   assert.equal(result.visible, false);
 });
 
-test('alert remains visible after weekly quota changes', () => {
+test('alert hides after 48 hours even when only the weekly usage changed', () => {
   const result = reconcileAlertState(EVENT, { remainingPercent: 41, usedPercent: 59, resetsAt: '2026-09-07T08:00:00.000Z' }, {
     eventId: EVENT.id,
     displayedAt: '2026-09-01T10:00:00.000Z',
-    baselineWeeklySignature: getWeeklyQuotaSignature({ remainingPercent: 42, usedPercent: 58, resetsAt: '2026-09-07T08:00:00.000Z' }),
-    weeklyChanged: false,
+    baselineWeeklySignature: 'previous-weekly-value',
     dismissedEventIds: [],
   }, '2026-09-03T10:00:00.000Z');
 
-  assert.equal(result.visible, true);
-  assert.equal(result.alertState.weeklyChanged, true);
+  assert.equal(result.visible, false);
 });
 
 test('normalizeFeed rejects invalid feed data without throwing', () => {

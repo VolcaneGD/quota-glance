@@ -7,8 +7,6 @@ const ALERT_TIMEOUT_MS = 48 * 60 * 60 * 1000;
 const DEFAULT_ALERT_STATE = Object.freeze({
   eventId: null,
   displayedAt: null,
-  baselineWeeklySignature: null,
-  weeklyChanged: false,
   dismissedEventIds: [],
 });
 
@@ -37,19 +35,8 @@ function normalizeAlertState(state) {
   return {
     eventId: typeof state?.eventId === 'string' ? state.eventId : null,
     displayedAt: typeof state?.displayedAt === 'string' ? state.displayedAt : null,
-    baselineWeeklySignature: typeof state?.baselineWeeklySignature === 'string' ? state.baselineWeeklySignature : null,
-    weeklyChanged: state?.weeklyChanged === true,
     dismissedEventIds: [...new Set(Array.isArray(state?.dismissedEventIds) ? state.dismissedEventIds.filter((id) => typeof id === 'string') : [])].slice(-20),
   };
-}
-
-function getWeeklyQuotaSignature(weeklyLimit) {
-  if (!weeklyLimit || (!Number.isFinite(weeklyLimit.remainingPercent) && !Number.isFinite(weeklyLimit.usedPercent) && !weeklyLimit.resetsAt)) return null;
-  return JSON.stringify({
-    remainingPercent: Number.isFinite(weeklyLimit.remainingPercent) ? weeklyLimit.remainingPercent : null,
-    usedPercent: Number.isFinite(weeklyLimit.usedPercent) ? weeklyLimit.usedPercent : null,
-    resetsAt: weeklyLimit.resetsAt || null,
-  });
 }
 
 function selectDisplayEvent(feed) {
@@ -65,20 +52,13 @@ function reconcileAlertState(event, weeklyLimit, previousState, now = new Date()
     return { visible: false, alertState: state };
   }
 
-  const signature = getWeeklyQuotaSignature(weeklyLimit);
   if (state.eventId !== event.id) {
     state.eventId = event.id;
     state.displayedAt = now;
-    state.baselineWeeklySignature = signature;
-    state.weeklyChanged = false;
-  } else if (!state.baselineWeeklySignature && signature) {
-    state.baselineWeeklySignature = signature;
-  } else if (state.baselineWeeklySignature && signature && state.baselineWeeklySignature !== signature) {
-    state.weeklyChanged = true;
   }
 
   const displayedAt = Date.parse(state.displayedAt);
-  if (state.baselineWeeklySignature && !state.weeklyChanged && Number.isFinite(displayedAt) && Date.parse(now) - displayedAt >= ALERT_TIMEOUT_MS) {
+  if (Number.isFinite(displayedAt) && Date.parse(now) - displayedAt >= ALERT_TIMEOUT_MS) {
     state.dismissedEventIds = [...state.dismissedEventIds, event.id].slice(-20);
     return { visible: false, alertState: state };
   }
@@ -158,7 +138,6 @@ module.exports = {
   DEFAULT_ALERT_STATE,
   DEFAULT_FEED_URL,
   ResetFeedReader,
-  getWeeklyQuotaSignature,
   normalizeFeed,
   reconcileAlertState,
   selectDisplayEvent,

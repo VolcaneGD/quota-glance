@@ -1,3 +1,10 @@
+# Quota Glance 1.4.4
+
+## Reset advisory timeout
+
+- The reset advisory now closes 48 hours after it was first displayed, even if weekly usage or credit balance changes in the meantime.
+- It still closes immediately when the weekly quota returns to 100%.
+
 # Quota Glance 1.4.3
 
 ## Reset advisory feed
