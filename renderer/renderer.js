@@ -41,6 +41,13 @@ const I18N = {
     exitMinimumMode: '通常表示に戻す',
     resetAlert: '利用上限リセットの告知を検知しました',
     resetAlertSource: '原典を開く',
+    xApiLabel: '任意のX API',
+    xApiDefault: '既定ではGoogleアラートRSSを使用します。自分のBearer Tokenを保存すると、端末上で直接確認します。',
+    xApiRss: 'RSS',
+    xApiConfigured: 'X API',
+    xApiUnavailable: '暗号化不可',
+    xApiSave: '保存',
+    xApiClear: '削除',
   },
   en: {
     loading: 'Loading',
@@ -84,6 +91,13 @@ const I18N = {
     exitMinimumMode: 'Return to full view',
     resetAlert: 'A usage-limit reset announcement was detected',
     resetAlertSource: 'Open source',
+    xApiLabel: 'Optional X API',
+    xApiDefault: 'Google Alerts RSS is used by default. Save your own Bearer Token for a direct local check.',
+    xApiRss: 'RSS',
+    xApiConfigured: 'X API',
+    xApiUnavailable: 'Encryption unavailable',
+    xApiSave: 'Save',
+    xApiClear: 'Remove',
   },
 };
 
@@ -126,6 +140,7 @@ const elements = {
   closeButton: document.querySelector('#close-button'),
   sourceButton: document.querySelector('#source-button'),
   errorMessage: document.querySelector('#error-message'),
+  xApiLabel: document.querySelector('#x-api-label'), xApiNote: document.querySelector('#x-api-note'), xApiStatus: document.querySelector('#x-api-status'), xApiToken: document.querySelector('#x-api-token'), xApiSave: document.querySelector('#x-api-save'), xApiClear: document.querySelector('#x-api-clear'),
 };
 
 let currentSnapshot = null;
@@ -260,10 +275,21 @@ function applyLanguage() {
   elements.refreshIntervalLabel.textContent = t('refreshInterval');
   elements.refreshInterval.setAttribute('aria-label', t('refreshIntervalAria'));
   elements.opacityLabel.textContent = language === 'ja' ? '透明度' : 'Opacity';
+  elements.xApiLabel.textContent = t('xApiLabel');
+  elements.xApiNote.textContent = t('xApiDefault');
+  elements.xApiSave.textContent = t('xApiSave');
+  elements.xApiClear.textContent = t('xApiClear');
   renderRefreshInterval();
   applyMinimumMode();
   render(currentSnapshot);
   renderResetAlert(currentResetFeed);
+}
+
+async function renderXApiStatus() {
+  const status = await window.codexUsage.getXApiStatus();
+  elements.xApiStatus.textContent = status.configured ? t('xApiConfigured') : status.protected ? t('xApiRss') : t('xApiUnavailable');
+  elements.xApiClear.hidden = !status.configured;
+  elements.xApiSave.disabled = !status.protected;
 }
 
 function renderResetAlert(state) {
@@ -390,6 +416,18 @@ elements.resetAlertLink.addEventListener('click', () => {
   const sourceUrl = currentResetFeed?.event?.sourceUrl;
   if (sourceUrl) window.codexUsage.openExternal(sourceUrl);
 });
+elements.xApiSave.addEventListener('click', async () => {
+  if (!elements.xApiToken.value.trim()) return;
+  await window.codexUsage.setXApiToken(elements.xApiToken.value);
+  elements.xApiToken.value = '';
+  await renderXApiStatus();
+  renderResetAlert(await window.codexUsage.refreshResetFeed());
+});
+elements.xApiClear.addEventListener('click', async () => {
+  await window.codexUsage.clearXApiToken();
+  await renderXApiStatus();
+  renderResetAlert(await window.codexUsage.refreshResetFeed());
+});
 
 window.codexUsage.onChanged(render);
 window.codexUsage.onResetFeedChanged(renderResetAlert);
@@ -406,6 +444,7 @@ async function initialize() {
   renderOpacity();
   renderMetrics(await window.codexUsage.getSystemMetrics());
   renderResetAlert(await window.codexUsage.getResetFeed());
+  await renderXApiStatus();
   const savedMinimumMode = localStorage.getItem('quota-glance-minimum-mode') === 'true';
   minimumMode = savedMinimumMode
     ? await window.codexUsage.setMinimumMode(true)

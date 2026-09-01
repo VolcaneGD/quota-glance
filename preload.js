@@ -8,6 +8,9 @@ contextBridge.exposeInMainWorld('codexUsage', {
   getSystemMetrics: () => ipcRenderer.invoke('system:get-metrics'),
   getResetFeed: () => ipcRenderer.invoke('reset-feed:get'),
   refreshResetFeed: () => ipcRenderer.invoke('reset-feed:refresh'),
+  getXApiStatus: () => ipcRenderer.invoke('x-api:get-status'),
+  setXApiToken: (token) => ipcRenderer.invoke('x-api:set-token', token),
+  clearXApiToken: () => ipcRenderer.invoke('x-api:clear-token'),
   onResetFeedChanged: (callback) => {
     const listener = (_event, state) => callback(state);
     ipcRenderer.on('reset-feed:changed', listener);

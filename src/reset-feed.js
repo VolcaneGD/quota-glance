@@ -61,12 +61,13 @@ function reconcileAlertState(event, weeklyLimit, previousState, now = new Date()
 }
 
 class ResetFeedReader extends EventEmitter {
-  constructor({ feedUrl = DEFAULT_FEED_URL, refreshIntervalMs = DEFAULT_REFRESH_INTERVAL_MS, fetchImpl = globalThis.fetch, cachePath = null, now = () => new Date().toISOString() } = {}) {
+  constructor({ feedUrl = DEFAULT_FEED_URL, refreshIntervalMs = DEFAULT_REFRESH_INTERVAL_MS, fetchImpl = globalThis.fetch, cachePath = null, directSource = null, now = () => new Date().toISOString() } = {}) {
     super();
     this.feedUrl = feedUrl;
     this.refreshIntervalMs = refreshIntervalMs;
     this.fetchImpl = fetchImpl;
     this.cachePath = cachePath;
+    this.directSource = directSource;
     this.now = now;
     this.timer = null;
     this.feed = normalizeFeed(null);
@@ -92,6 +93,12 @@ class ResetFeedReader extends EventEmitter {
   stop() { if (this.timer) clearInterval(this.timer); this.timer = null; }
 
   async refresh() {
+    const directEvent = await this.directSource?.fetchEvent?.();
+    if (directEvent) {
+      this.feed = normalizeFeed({ schemaVersion: 2, updatedAt: directEvent.detectedAt, events: [directEvent] });
+      this.publish('direct');
+      return this.state;
+    }
     if (typeof this.fetchImpl !== 'function') { this.publish('unavailable'); return this.state; }
     try {
       const response = await this.fetchImpl(this.feedUrl, { cache: 'no-store' });

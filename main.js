@@ -1,9 +1,11 @@
 const path = require('node:path');
-const { app, BrowserWindow, ipcMain, Menu, nativeImage, shell, Tray } = require('electron');
+const { app, BrowserWindow, ipcMain, Menu, nativeImage, safeStorage, shell, Tray } = require('electron');
 const { UsageReader } = require('./src/usage-reader');
 const { ResetFeedReader } = require('./src/reset-feed');
 const { collectSystemMetrics } = require('./src/system-metrics');
 const { loadWindowState, saveWindowState } = require('./src/window-state');
+const { SecureTokenStore } = require('./src/secure-token-store');
+const { XApiSource } = require('./src/x-api-source');
 
 let mainWindow;
 let tray;
@@ -14,6 +16,7 @@ let standardWindowBounds = { width: 372, height: 652 };
 let preferences;
 let preferencesPath;
 let resetFeedReader;
+let xApiTokenStore;
 
 const hasSingleInstanceLock = app.requestSingleInstanceLock();
 if (!hasSingleInstanceLock) {
@@ -192,8 +195,10 @@ if (hasSingleInstanceLock) {
 
   app.whenReady().then(async () => {
     preferencesPath = path.join(app.getPath('userData'), 'quota-glance-state.json');
+    xApiTokenStore = new SecureTokenStore(path.join(app.getPath('userData'), 'quota-glance-x-api.json'), safeStorage);
     resetFeedReader = new ResetFeedReader({
       cachePath: path.join(app.getPath('userData'), 'quota-glance-reset-feed.json'),
+      directSource: new XApiSource({ getToken: () => xApiTokenStore.getToken() }),
     });
     preferences = loadWindowState(preferencesPath);
     uiLanguage = preferences.language;
@@ -222,6 +227,9 @@ ipcMain.handle('usage:set-refresh-interval', (_event, milliseconds) => { const v
 ipcMain.handle('system:get-metrics', () => collectSystemMetrics());
 ipcMain.handle('reset-feed:get', () => resetFeedReader?.getState() || null);
 ipcMain.handle('reset-feed:refresh', () => resetFeedReader?.refresh() || null);
+ipcMain.handle('x-api:get-status', () => xApiTokenStore?.status() || { configured: false, protected: false });
+ipcMain.handle('x-api:set-token', async (_event, token) => { const status = xApiTokenStore.setToken(token); await resetFeedReader.refresh(); return status; });
+ipcMain.handle('x-api:clear-token', () => xApiTokenStore.clear());
 ipcMain.handle('app:get-preferences', () => preferences);
 ipcMain.handle('app:set-opacity', (_event, opacity) => {
   preferences.opacity = Math.min(1, Math.max(0.4, Number(opacity) || 1));

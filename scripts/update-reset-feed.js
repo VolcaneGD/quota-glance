@@ -2,7 +2,6 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 
 const SOURCE_ACCOUNT = 'thsottiaux';
-const X_SEARCH_URL = 'https://api.x.com/2/tweets/search/recent';
 const OUTPUT_PATH = path.join(__dirname, '..', 'docs', 'reset-feed.json');
 
 function classifyPost(post) {
@@ -32,17 +31,30 @@ function buildFeed(posts, now = new Date().toISOString()) {
   };
 }
 
+function decodeXml(value = '') {
+  return value.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1').replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim();
+}
+
+function extractRssPosts(xml) {
+  const blocks = String(xml).match(/<(?:entry|item)\b[\s\S]*?<\/(?:entry|item)>/gi) || [];
+  return blocks.map((block) => {
+    const href = block.match(/<link\b[^>]*\bhref=["']([^"']+)["'][^>]*>/i)?.[1]
+      || block.match(/<link\b[^>]*>([\s\S]*?)<\/link>/i)?.[1] || '';
+    const match = href.match(/^https:\/\/x\.com\/thsottiaux\/status\/(\d+)(?:[/?#].*)?$/i);
+    if (!match) return null;
+    const title = block.match(/<title\b[^>]*>([\s\S]*?)<\/title>/i)?.[1] || '';
+    const summary = block.match(/<(?:summary|content|description)\b[^>]*>([\s\S]*?)<\/(?:summary|content|description)>/i)?.[1] || '';
+    const date = block.match(/<(?:published|updated|pubDate)\b[^>]*>([\s\S]*?)<\/(?:published|updated|pubDate)>/i)?.[1] || null;
+    return { id: match[1], text: decodeXml(`${title} ${summary}`), created_at: date ? decodeXml(date) : null };
+  }).filter(Boolean);
+}
+
 async function fetchRecentPosts() {
-  const bearerToken = process.env.X_BEARER_TOKEN;
-  if (!bearerToken) throw new Error('X_BEARER_TOKEN is required');
-  const params = new URLSearchParams({
-    query: `from:${SOURCE_ACCOUNT} (Codex OR "ChatGPT Work" OR reset OR limits OR usage) -is:retweet`,
-    max_results: '20',
-    'tweet.fields': 'created_at',
-  });
-  const response = await fetch(`${X_SEARCH_URL}?${params}`, { headers: { Authorization: `Bearer ${bearerToken}` } });
-  if (!response.ok) throw new Error(`X API request failed: ${response.status} ${await response.text()}`);
-  return (await response.json()).data || [];
+  const rssUrl = process.env.GOOGLE_ALERT_RSS_URL;
+  if (!rssUrl) throw new Error('GOOGLE_ALERT_RSS_URL is required');
+  const response = await fetch(rssUrl, { headers: { Accept: 'application/atom+xml, application/rss+xml, application/xml, text/xml' } });
+  if (!response.ok) throw new Error(`Google Alerts RSS request failed: ${response.status}`);
+  return extractRssPosts(await response.text());
 }
 
 async function main() {
@@ -53,4 +65,4 @@ async function main() {
 
 if (require.main === module) main().catch((error) => { console.error(error); process.exitCode = 1; });
 
-module.exports = { buildFeed, classifyPost };
+module.exports = { buildFeed, classifyPost, extractRssPosts };

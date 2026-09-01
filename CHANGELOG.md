@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.4.6 - 2026-09-01
+
+- Made Google Alerts RSS the default reset-advisory source.
+- Added optional encrypted local storage for a user-owned X API Bearer Token.
+
 ## 1.4.5 - 2026-09-01
 
 - Made the reset-advisory feed publish only eligible X Post IDs and Quota Glance detection times.

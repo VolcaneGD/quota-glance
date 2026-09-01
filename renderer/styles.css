@@ -128,6 +128,13 @@ button { font: inherit; }
   border-radius: 12px;
   background: rgba(255,255,255,0.018);
 }
+.x-api-settings { padding: 10px 12px 9px; border: 1px solid var(--line); border-radius: 12px; background: rgba(255,255,255,0.018); }
+.x-api-settings p { margin: 0 0 8px; color: var(--muted); font-size: 9px; line-height: 1.45; }
+.x-api-settings input { width: 100%; height: 27px; padding: 0 8px; border: 1px solid var(--line); border-radius: 7px; color: var(--text); background: rgba(0,0,0,.14); font: inherit; font-size: 10px; outline: none; }
+.x-api-settings input:focus { border-color: rgba(85,230,173,.45); }
+.x-api-actions { display: flex; justify-content: flex-end; gap: 6px; margin-top: 7px; }
+.x-api-actions button { padding: 4px 9px; border: 1px solid var(--line); border-radius: 7px; color: var(--accent); background: transparent; font-size: 9px; cursor: pointer; }
+.x-api-actions button[hidden] { display: none; }
 .refresh-settings-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 7px; }
 .refresh-settings label { color: var(--muted); font-size: 10px; font-weight: 650; }
 .refresh-settings output { color: var(--accent); font-size: 10px; font-weight: 700; font-variant-numeric: tabular-nums; }
@@ -184,6 +191,7 @@ footer { display: flex; align-items: center; gap: 8px; margin-top: 0; }
 .minimum-mode .subtle,
 .minimum-mode .usage-meta,
 .minimum-mode .refresh-settings,
+.minimum-mode .x-api-settings,
 .minimum-mode footer,
 .minimum-mode .error-message { display: none; }
 .minimum-mode .window-actions { gap: 0; }

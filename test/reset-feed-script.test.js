@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { buildFeed, classifyPost } = require('../scripts/update-reset-feed');
+const { buildFeed, classifyPost, extractRssPosts } = require('../scripts/update-reset-feed');
 
 test('classifies a direct reset declaration without carrying its text into the event', () => {
   const event = classifyPost({
@@ -67,4 +67,17 @@ test('buildFeed publishes only a post ID and local detection time', () => {
     events: [{ postId: '2081096447718723984', detectedAt: '2026-09-01T08:30:00.000Z' }],
   });
   assert.doesNotMatch(JSON.stringify(feed), new RegExp(sourceText));
+});
+
+test('extractRssPosts accepts only Tibo X post links from an Atom feed', () => {
+  const posts = extractRssPosts(`<?xml version="1.0"?><feed>
+    <entry><title>Codex usage limits reset</title><link href="https://x.com/thsottiaux/status/2081096447718723984" /></entry>
+    <entry><title>Ignore this</title><link href="https://x.com/other/status/2081096447718723985" /></entry>
+  </feed>`);
+
+  assert.deepEqual(posts, [{
+    id: '2081096447718723984',
+    text: 'Codex usage limits reset',
+    created_at: null,
+  }]);
 });

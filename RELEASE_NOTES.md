@@ -1,3 +1,10 @@
+# Quota Glance 1.4.6
+
+## Google Alerts RSS default
+
+- Google Alerts RSS is now the default advisory source; the public feed retains only qualifying Post IDs and detection times.
+- Users can optionally save their own X API Bearer Token in Windows encrypted storage for direct local checks.
+
 # Quota Glance 1.4.5
 
 ## Reset advisory feed privacy

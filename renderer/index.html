@@ -87,6 +87,13 @@
         <input id="opacity" type="range" min="40" max="100" step="1" value="100" aria-label="透明度" />
       </section>
 
+      <section class="x-api-settings" aria-labelledby="x-api-label">
+        <div class="refresh-settings-heading"><label id="x-api-label" for="x-api-token">任意のX API</label><output id="x-api-status">RSS</output></div>
+        <p id="x-api-note">既定ではGoogleアラートRSSを使用します。</p>
+        <input id="x-api-token" type="password" autocomplete="off" spellcheck="false" placeholder="Bearer Token" />
+        <div class="x-api-actions"><button id="x-api-save" type="button">保存</button><button id="x-api-clear" type="button">削除</button></div>
+      </section>
+
       <footer>
         <button id="source-button" class="source-button" title="取得元ファイルを表示">
           <span id="updated-at">最終取得 —</span>

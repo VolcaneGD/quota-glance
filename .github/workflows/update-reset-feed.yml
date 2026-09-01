@@ -22,15 +22,15 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Update public feed when configured
+      - name: Update public feed from Google Alerts RSS when configured
         run: |
-          if [ -z "$X_BEARER_TOKEN" ]; then
-            echo "No X_BEARER_TOKEN configured; keeping the public feed empty."
+          if [ -z "$GOOGLE_ALERT_RSS_URL" ]; then
+            echo "No GOOGLE_ALERT_RSS_URL configured; keeping the public feed empty."
             exit 0
           fi
           npm run update-reset-feed
         env:
-          X_BEARER_TOKEN: ${{ secrets.X_BEARER_TOKEN }}
+          GOOGLE_ALERT_RSS_URL: ${{ secrets.GOOGLE_ALERT_RSS_URL }}
       - name: Commit feed update
         run: |
           if git diff --quiet -- docs/reset-feed.json; then exit 0; fi
