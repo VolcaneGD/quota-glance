@@ -251,7 +251,7 @@ ipcMain.on('source:reveal', (_event, sourcePath) => {
   }
 });
 ipcMain.on('external:open', (_event, url) => {
-  if (typeof url === 'string' && /^https:\/\/x\.com\/thsottiaux\/status\/\d+$/.test(url)) {
+  if (typeof url === 'string' && /^https:\/\/x\.com\/i\/status\/\d+$/.test(url)) {
     shell.openExternal(url);
   }
 });

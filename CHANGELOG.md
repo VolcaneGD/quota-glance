@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.4.5 - 2026-09-01
+
+- Made the reset-advisory feed publish only eligible X Post IDs and Quota Glance detection times.
+- Removed post text, media, author data, post timestamps, and classification details from the public feed and alert card.
+
 ## 1.4.2 - 2026-08-06
 
 - Kept the last successfully collected system metric when a later sample is unavailable.

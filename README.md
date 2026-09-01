@@ -43,7 +43,7 @@ Quota Glanceは認証トークンやAPIキーを読みません。`%CODEX_HOME%\
 
 ### リセット可能性の通知
 
-アプリは公開されたJSONフィードを定期的に取得します。フィードには、OpenAIの公開投稿から検出した直近3日以内のリセット関連告知だけが含まれます。告知がない場合、通知カードは表示されません。表示後は、週間枠が100%に戻った時点、または表示開始から48時間が経過した時点で非表示になります。途中の利用量やクレジット残高の変化で48時間タイマーが延長されることはありません。これは公式の利用上限APIではなく、告知を補助的に伝える機能です。
+アプリは公開されたJSONフィードを定期的に取得します。フィードには、直近3日以内に検知された告知の投稿IDと、アプリ側の検知時刻だけが含まれます。投稿本文、画像、作者情報、投稿時刻などのXコンテンツは保存・配布・表示しません。告知がない場合、通知カードは表示されません。表示後は、週間枠が100%に戻った時点、または表示開始から48時間が経過した時点で非表示になります。途中の利用量やクレジット残高の変化で48時間タイマーが延長されることはありません。これは公式の利用上限APIではなく、告知を補助的に伝える機能です。
 
 フィードを運用する開発者は、リポジトリの`X_BEARER_TOKEN` Actions secretを設定してください。トークンはGitHub Actions内でのみ使用し、生成される公開フィードには含まれません。
 
@@ -79,7 +79,7 @@ Quota Glance is an unofficial freeware utility for Windows that displays usage i
 
 It shows the remaining credit balance, five-hour and weekly usage windows, separate reset times, and countdowns. When a qualifying public announcement is available, it can also show a reset advisory card. The interface and tray menu can be switched between Japanese and English. Quota Glance does not read authentication tokens or use analytics.
 
-The advisory reads a public JSON feed containing relevant posts from the preceding three days. No card is shown when no recent announcement is available. A displayed card is hidden when the weekly quota returns to 100%, or 48 hours after it was first displayed. Usage or credit-balance changes do not extend that 48-hour timer. This is an informational aid, not an official usage-limit API.
+The advisory reads a public JSON feed containing only an eligible Post ID and the app's detection time for announcements detected during the preceding three days. It does not store, distribute, or display X post text, media, author data, or post timestamps. No card is shown when no recent announcement is available. A displayed card is hidden when the weekly quota returns to 100%, or 48 hours after it was first displayed. Usage or credit-balance changes do not extend that 48-hour timer. This is an informational aid, not an official usage-limit API.
 
 Quota Glance is independently developed by VOLCANE. It is not provided, endorsed, sponsored, or supported by OpenAI. See [PRIVACY.md](PRIVACY.md), [NOTICE.md](NOTICE.md), and [LICENSE](LICENSE) for details.
 

@@ -1,6 +1,6 @@
 {
   "name": "quota-glance",
-  "version": "1.4.4",
+  "version": "1.4.5",
   "description": "A compact, unofficial desktop monitor for locally recorded Codex usage data.",
   "main": "main.js",
   "author": {

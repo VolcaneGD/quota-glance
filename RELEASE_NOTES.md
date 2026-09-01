@@ -1,3 +1,11 @@
+# Quota Glance 1.4.5
+
+## Reset advisory feed privacy
+
+- The public advisory feed now contains only a qualifying X Post ID and Quota Glance's local detection time.
+- Post text, media, author data, post timestamps, and classification details are not stored, distributed, or displayed.
+- The advisory card now uses generic bilingual text and opens the original source only on request.
+
 # Quota Glance 1.4.4
 
 ## Reset advisory timeout

@@ -11,22 +11,17 @@ const DEFAULT_ALERT_STATE = Object.freeze({
 });
 
 function normalizeFeed(feed) {
-  if (!feed || feed.schemaVersion !== 1 || !Array.isArray(feed.events)) {
-    return { schemaVersion: 1, updatedAt: null, sourceAccount: 'thsottiaux', events: [] };
+  if (!feed || feed.schemaVersion !== 2 || !Array.isArray(feed.events)) {
+    return { schemaVersion: 2, updatedAt: null, events: [] };
   }
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     updatedAt: typeof feed.updatedAt === 'string' ? feed.updatedAt : null,
-    sourceAccount: 'thsottiaux',
-    events: feed.events.filter((event) => event && typeof event.id === 'string' && typeof event.postedAt === 'string')
+    events: feed.events.filter((event) => event && /^\d+$/.test(event.postId) && Number.isFinite(Date.parse(event.detectedAt)))
       .map((event) => ({
-        id: event.id,
-        postedAt: event.postedAt,
-        kind: event.kind === 'banked_reset' ? 'banked_reset' : 'possible_reset',
-        confidence: event.confidence === 'medium' ? 'medium' : 'high',
-        messageJa: typeof event.messageJa === 'string' ? event.messageJa : '',
-        messageEn: typeof event.messageEn === 'string' ? event.messageEn : '',
-        sourceUrl: typeof event.sourceUrl === 'string' ? event.sourceUrl : '',
+        id: event.postId,
+        detectedAt: event.detectedAt,
+        sourceUrl: `https://x.com/i/status/${event.postId}`,
       })),
   };
 }
@@ -41,7 +36,7 @@ function normalizeAlertState(state) {
 
 function selectDisplayEvent(feed) {
   return normalizeFeed(feed).events
-    .sort((a, b) => Date.parse(b.postedAt) - Date.parse(a.postedAt))[0] || null;
+    .sort((a, b) => Date.parse(b.detectedAt) - Date.parse(a.detectedAt))[0] || null;
 }
 
 function reconcileAlertState(event, weeklyLimit, previousState, now = new Date().toISOString()) {

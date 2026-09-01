@@ -39,7 +39,8 @@ const I18N = {
     switchLanguage: 'Switch to English',
     enterMinimumMode: 'ミニマムモードに切り替え',
     exitMinimumMode: '通常表示に戻す',
-    resetAlertSource: '投稿を開く',
+    resetAlert: '利用上限リセットの告知を検知しました',
+    resetAlertSource: '原典を開く',
   },
   en: {
     loading: 'Loading',
@@ -81,7 +82,8 @@ const I18N = {
     switchLanguage: '日本語に切り替える',
     enterMinimumMode: 'Switch to minimum mode',
     exitMinimumMode: 'Return to full view',
-    resetAlertSource: 'Open post',
+    resetAlert: 'A usage-limit reset announcement was detected',
+    resetAlertSource: 'Open source',
   },
 };
 
@@ -270,7 +272,7 @@ function renderResetAlert(state) {
   elements.resetAlert.hidden = !event;
   if (!event) return;
 
-  elements.resetAlertText.textContent = language === 'ja' ? event.messageJa : event.messageEn;
+  elements.resetAlertText.textContent = t('resetAlert');
   const sourceLabel = t('resetAlertSource');
   elements.resetAlertLink.title = sourceLabel;
   elements.resetAlertLink.setAttribute('aria-label', sourceLabel);

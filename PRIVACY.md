@@ -16,7 +16,7 @@ Quota Glance does not collect, store, or transmit personal information, credenti
 
 To display usage information, the software reads Codex session files stored locally on the user's device. It extracts only `rate_limits` information related to usage limits, reset times, and credit status for local display in the window and system tray. It does not transmit session content, prompts, responses, authentication tokens, or API keys.
 
-The selected language and reset-advisory display state are stored only on the device. For the optional reset-advisory feature, the app periodically fetches a public JSON feed. Its host may receive ordinary network connection data such as an IP address, but the app does not transmit credentials, Codex session content, usage values, or device identifiers. The feed is used only to display a supplemental advisory based on public OpenAI-related announcements.
+The selected language and reset-advisory display state are stored only on the device. For the optional reset-advisory feature, the app periodically fetches a public JSON feed. The feed contains only a qualifying Post ID and the app's detection time; it does not contain post text, media, author data, or post timestamps. Its host may receive ordinary network connection data such as an IP address, but the app does not transmit credentials, Codex session content, usage values, or device identifiers. The feed is used only to display a supplemental advisory based on public OpenAI-related announcements.
 
 Publisher: VOLCANE
 
