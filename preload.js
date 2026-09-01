@@ -6,6 +6,13 @@ contextBridge.exposeInMainWorld('codexUsage', {
   getRefreshInterval: () => ipcRenderer.invoke('usage:get-refresh-interval'),
   setRefreshInterval: (milliseconds) => ipcRenderer.invoke('usage:set-refresh-interval', milliseconds),
   getSystemMetrics: () => ipcRenderer.invoke('system:get-metrics'),
+  getResetFeed: () => ipcRenderer.invoke('reset-feed:get'),
+  refreshResetFeed: () => ipcRenderer.invoke('reset-feed:refresh'),
+  onResetFeedChanged: (callback) => {
+    const listener = (_event, state) => callback(state);
+    ipcRenderer.on('reset-feed:changed', listener);
+    return () => ipcRenderer.removeListener('reset-feed:changed', listener);
+  },
   getPreferences: () => ipcRenderer.invoke('app:get-preferences'),
   setOpacity: (opacity) => ipcRenderer.invoke('app:set-opacity', opacity),
   setLanguage: (language) => ipcRenderer.invoke('app:set-language', language),
@@ -16,6 +23,7 @@ contextBridge.exposeInMainWorld('codexUsage', {
   minimize: () => ipcRenderer.send('window:minimize'),
   close: () => ipcRenderer.send('window:close'),
   revealSource: (sourcePath) => ipcRenderer.send('source:reveal', sourcePath),
+  openExternal: (url) => ipcRenderer.send('external:open', url),
   onChanged: (callback) => {
     const handler = (_event, snapshot) => callback(snapshot);
     ipcRenderer.on('usage:changed', handler);

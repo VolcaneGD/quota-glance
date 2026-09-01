@@ -29,9 +29,38 @@ test('opacity slider keeps its own visual progress', () => {
 test('system metric display retains the last successful value', () => {
   const root = path.join(__dirname, '..');
   const script = fs.readFileSync(path.join(root, 'renderer', 'renderer.js'), 'utf8');
+  const html = fs.readFileSync(path.join(root, 'renderer', 'index.html'), 'utf8');
 
   assert.match(script, /let lastSystemMetrics = \{\};/);
   assert.match(script, /const displayedValue = Number\.isFinite\(value\) \? value : lastSystemMetrics\[key\];/);
+  assert.match(html, /C <b id="metric-drive">--<\/b><\/span><span>GPU/);
+  assert.match(script, /\['drive', '%', 'free'\]/);
+});
+
+test('reset feed IPC contract is exposed to the renderer', () => {
+  const root = path.join(__dirname, '..');
+  const preload = fs.readFileSync(path.join(root, 'preload.js'), 'utf8');
+  const main = fs.readFileSync(path.join(root, 'main.js'), 'utf8');
+
+  assert.match(main, /ipcMain\.handle\('reset-feed:get'/);
+  assert.match(main, /ipcMain\.handle\('reset-feed:refresh'/);
+  assert.match(main, /webContents\.send\('reset-feed:changed'/);
+  assert.match(preload, /getResetFeed:/);
+  assert.match(preload, /refreshResetFeed:/);
+  assert.match(preload, /onResetFeedChanged:/);
+});
+
+test('reset alert card is rendered and remains available in minimum mode', () => {
+  const root = path.join(__dirname, '..');
+  const html = fs.readFileSync(path.join(root, 'renderer', 'index.html'), 'utf8');
+  const script = fs.readFileSync(path.join(root, 'renderer', 'renderer.js'), 'utf8');
+  const css = fs.readFileSync(path.join(root, 'renderer', 'styles.css'), 'utf8');
+
+  assert.match(html, /id="reset-alert"/);
+  assert.match(html, /id="reset-alert-text"/);
+  assert.match(html, /id="reset-alert-link"/);
+  assert.match(script, /function renderResetAlert\(/);
+  assert.doesNotMatch(css, /\.minimum-mode\s+#reset-alert\s*\{\s*display\s*:\s*none/);
 });
 
 test('残り割合の色分岐とミニマムモードの契約を維持する', () => {
@@ -48,4 +77,6 @@ test('残り割合の色分岐とミニマムモードの契約を維持する',
   assert.match(css, /\.minimum-mode \.app-shell/);
   assert.doesNotMatch(css, /\.minimum-mode \.status-strip\s*\{\s*display\s*:\s*none/);
   assert.match(main, /mainWindow\.setSize\(310, 310, true\);/);
+  assert.match(main, /height: 652/);
+  assert.match(main, /Math\.max\(652, bounds\.height\)/);
 });

@@ -117,6 +117,10 @@ button { font: inherit; }
 .usage-meta { display: flex; justify-content: space-between; gap: 8px; margin-top: 8px; color: var(--muted); font-size: 9px; font-variant-numeric: tabular-nums; }
 .usage-meta span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .usage-meta span:last-child { flex: 0 0 auto; color: #718a7f; }
+.reset-alert { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 9px; color: #f4d28a; font-size: 10px; font-weight: 650; line-height: 1.3; }
+.reset-alert[hidden] { display: none; }
+.reset-alert-link { flex: 0 0 auto; min-width: 23px; height: 20px; padding: 0 6px; border: 1px solid rgba(255, 202, 112, 0.26); border-radius: 7px; color: var(--warn); background: rgba(255, 202, 112, 0.08); font-size: 9px; font-weight: 750; cursor: pointer; }
+.reset-alert-link:hover { color: var(--text); border-color: rgba(255, 202, 112, 0.5); }
 
 .refresh-settings {
   padding: 10px 12px 9px;
@@ -194,6 +198,8 @@ footer { display: flex; align-items: center; gap: 8px; margin-top: 0; }
 .minimum-mode .section-heading strong { font-size: 13px; }
 .minimum-mode .badge { min-width: 68px; padding: 5px 8px; font-size: 9px; }
 .minimum-mode .progress-track { height: 5px; margin-top: 7px; }
+.minimum-mode .reset-alert { margin-top: 6px; font-size: 9px; }
+.minimum-mode .reset-alert-link { min-width: 20px; height: 18px; padding: 0 5px; border-radius: 6px; font-size: 8px; }
 
 @media (max-height: 450px) {
   .app-shell { gap: 8px; }

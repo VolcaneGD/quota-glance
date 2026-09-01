@@ -2,6 +2,7 @@ const { contextBridge } = require('electron');
 
 const now = Date.now();
 const criticalPreview = process.argv.includes('--critical');
+const resetAlertPreview = process.argv.includes('--reset-alert-preview');
 const snapshot = {
   observedAt: new Date(now).toISOString(),
   checkedAt: new Date(now).toISOString(),
@@ -35,6 +36,16 @@ let refreshIntervalMs = 5_000;
 let minimumMode = false;
 let opacity = 1;
 
+const resetFeedState = resetAlertPreview ? {
+  event: {
+    id: 'preview-reset-alert',
+    messageJa: '26/09/01: リセットの可能性あり',
+    messageEn: '26/09/01: Reset may be coming',
+    sourceUrl: 'https://x.com/thsottiaux/status/2081096447718723984',
+  },
+  status: 'synced',
+} : { event: null, status: 'synced' };
+
 contextBridge.exposeInMainWorld('codexUsage', {
   get: async () => snapshot,
   refresh: async () => snapshot,
@@ -62,9 +73,13 @@ contextBridge.exposeInMainWorld('codexUsage', {
     opacity = value;
     return opacity;
   },
-  getSystemMetrics: async () => ({ gpu: 27, cpu: 13, mem: 65, temp: 59 }),
+  getSystemMetrics: async () => ({ drive: 41, gpu: 27, cpu: 13, mem: 65, temp: 59 }),
+  getResetFeed: async () => resetFeedState,
+  refreshResetFeed: async () => resetFeedState,
   minimize: () => {},
   close: () => {},
   revealSource: () => {},
+  openExternal: () => {},
   onChanged: () => () => {},
+  onResetFeedChanged: () => () => {},
 });

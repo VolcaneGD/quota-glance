@@ -12,14 +12,16 @@ app.whenReady().then(async () => {
   const language = process.argv.includes('--language=en') ? 'en' : 'ja';
   const minimumMode = process.argv.includes('--minimum');
   const criticalPreview = process.argv.includes('--critical');
+  const resetAlertPreview = process.argv.includes('--reset-alert');
   const window = new BrowserWindow({
     width: minimumMode ? 310 : 372,
-    height: minimumMode ? 310 : 604,
+    height: minimumMode ? 332 : 652,
     show: false,
     frame: false,
     backgroundColor: '#0b1210',
     webPreferences: {
       preload: path.join(__dirname, 'screenshot-preload.js'),
+      additionalArguments: resetAlertPreview ? ['--reset-alert-preview'] : [],
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
@@ -44,10 +46,12 @@ app.whenReady().then(async () => {
     minimum: document.documentElement.classList.contains('minimum-mode'),
     fiveHour: document.querySelector('#five-hour-progress-fill').className,
     weekly: document.querySelector('#weekly-progress-fill').className,
+    resetAlertVisible: !document.querySelector('#reset-alert').hidden,
   }))()`);
   if (stateCheck.minimum !== minimumMode) throw new Error('Minimum mode did not match the saved preference');
   if (!stateCheck.fiveHour.includes('good')) throw new Error('Green remaining state did not render');
   if (!stateCheck.weekly.includes(criticalPreview ? 'critical' : 'warning')) throw new Error('Remaining threshold state did not render');
+  if (stateCheck.resetAlertVisible !== resetAlertPreview) throw new Error('Reset alert visibility did not match the preview');
   const interaction = await window.webContents.executeJavaScript(`(() => {
     const slider = document.querySelector('#refresh-interval');
     slider.value = '12';
@@ -90,7 +94,7 @@ app.whenReady().then(async () => {
   `);
   await new Promise((resolve) => setTimeout(resolve, 180));
   const image = await window.webContents.capturePage();
-  const suffix = minimumMode ? '-minimum' : '';
+  const suffix = `${minimumMode ? '-minimum' : ''}${resetAlertPreview ? '-reset-alert' : ''}`;
   const output = path.join(__dirname, '..', 'assets', `quota-glance-screenshot-${language}${suffix}.png`);
   await fs.writeFile(output, image.toPNG());
   console.log(output);

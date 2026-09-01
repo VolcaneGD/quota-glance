@@ -27,7 +27,7 @@
       </header>
 
       <section class="status-strip" aria-label="System status">
-        <span>GPU <b id="metric-gpu">--</b></span><span>CPU <b id="metric-cpu">--</b></span><span>MEM <b id="metric-mem">--</b></span><span>TEMP <b id="metric-temp">--</b></span>
+        <span>C <b id="metric-drive">--</b></span><span>GPU <b id="metric-gpu">--</b></span><span>CPU <b id="metric-cpu">--</b></span><span>MEM <b id="metric-mem">--</b></span><span>TEMP <b id="metric-temp">--</b></span>
       </section>
 
       <section class="balance-card">
@@ -70,6 +70,10 @@
         <div class="usage-meta">
           <span id="weekly-reset-time">—</span>
           <span id="weekly-countdown">—</span>
+        </div>
+        <div id="reset-alert" class="reset-alert" hidden>
+          <span id="reset-alert-text"></span>
+          <button id="reset-alert-link" class="reset-alert-link" type="button">X</button>
         </div>
       </section>
 

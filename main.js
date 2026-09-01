@@ -1,6 +1,7 @@
 const path = require('node:path');
 const { app, BrowserWindow, ipcMain, Menu, nativeImage, shell, Tray } = require('electron');
 const { UsageReader } = require('./src/usage-reader');
+const { ResetFeedReader } = require('./src/reset-feed');
 const { collectSystemMetrics } = require('./src/system-metrics');
 const { loadWindowState, saveWindowState } = require('./src/window-state');
 
@@ -9,9 +10,10 @@ let tray;
 let isQuitting = false;
 let uiLanguage = 'ja';
 let isMinimumMode = false;
-let standardWindowBounds = { width: 372, height: 604 };
+let standardWindowBounds = { width: 372, height: 652 };
 let preferences;
 let preferencesPath;
+let resetFeedReader;
 
 const hasSingleInstanceLock = app.requestSingleInstanceLock();
 if (!hasSingleInstanceLock) {
@@ -65,14 +67,14 @@ function trayCopy() {
 }
 
 function createWindow() {
-  const bounds = preferences.bounds || { width: 372, height: 604 };
+  const bounds = preferences.bounds || { width: 372, height: 652 };
   mainWindow = new BrowserWindow({
     x: bounds.x,
     y: bounds.y,
     width: Math.max(372, bounds.width),
-    height: Math.max(604, bounds.height),
+    height: Math.max(652, bounds.height),
     minWidth: 340,
-    minHeight: 556,
+    minHeight: 604,
     maxWidth: 460,
     show: false,
     frame: false,
@@ -119,10 +121,10 @@ function setMinimumMode(enabled) {
     mainWindow.setMinimumSize(292, 290);
     mainWindow.setSize(310, 310, true);
   } else {
-    mainWindow.setMinimumSize(340, 556);
+    mainWindow.setMinimumSize(340, 604);
     mainWindow.setSize(
       Math.max(372, standardWindowBounds.width),
-      Math.max(604, standardWindowBounds.height),
+      Math.max(652, standardWindowBounds.height),
       true,
     );
   }
@@ -173,8 +175,10 @@ function updateTray(snapshot) {
 
 function publish(snapshot) {
   updateTray(snapshot);
+  resetFeedReader?.setUsageSnapshot(snapshot);
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.webContents.send('usage:changed', snapshot);
+    mainWindow.webContents.send('reset-feed:changed', resetFeedReader?.getState() || null);
   }
 }
 
@@ -188,6 +192,9 @@ if (hasSingleInstanceLock) {
 
   app.whenReady().then(async () => {
     preferencesPath = path.join(app.getPath('userData'), 'quota-glance-state.json');
+    resetFeedReader = new ResetFeedReader({
+      cachePath: path.join(app.getPath('userData'), 'quota-glance-reset-feed.json'),
+    });
     preferences = loadWindowState(preferencesPath);
     uiLanguage = preferences.language;
     reader.setRefreshInterval(preferences.refreshIntervalMs);
@@ -195,18 +202,26 @@ if (hasSingleInstanceLock) {
     if (preferences.minimumMode) setMinimumMode(true);
     createTray();
     reader.on('change', publish);
+    resetFeedReader.on('change', (state) => {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('reset-feed:changed', state);
+      }
+    });
     await reader.start();
+    await resetFeedReader.start();
   });
 }
 
 app.on('window-all-closed', (event) => event.preventDefault());
-app.on('before-quit', () => { isQuitting = true; reader.stop(); });
+app.on('before-quit', () => { isQuitting = true; reader.stop(); resetFeedReader?.stop(); });
 
 ipcMain.handle('usage:get', () => reader.getSnapshot());
 ipcMain.handle('usage:refresh', () => reader.refresh());
 ipcMain.handle('usage:get-refresh-interval', () => reader.refreshIntervalMs);
 ipcMain.handle('usage:set-refresh-interval', (_event, milliseconds) => { const value = reader.setRefreshInterval(milliseconds); preferences.refreshIntervalMs = value; savePreferences(); return value; });
 ipcMain.handle('system:get-metrics', () => collectSystemMetrics());
+ipcMain.handle('reset-feed:get', () => resetFeedReader?.getState() || null);
+ipcMain.handle('reset-feed:refresh', () => resetFeedReader?.refresh() || null);
 ipcMain.handle('app:get-preferences', () => preferences);
 ipcMain.handle('app:set-opacity', (_event, opacity) => {
   preferences.opacity = Math.min(1, Math.max(0.4, Number(opacity) || 1));
@@ -233,5 +248,10 @@ ipcMain.on('window:close', () => mainWindow.hide());
 ipcMain.on('source:reveal', (_event, sourcePath) => {
   if (typeof sourcePath === 'string' && sourcePath.startsWith(codexHome)) {
     shell.showItemInFolder(sourcePath);
+  }
+});
+ipcMain.on('external:open', (_event, url) => {
+  if (typeof url === 'string' && /^https:\/\/x\.com\/thsottiaux\/status\/\d+$/.test(url)) {
+    shell.openExternal(url);
   }
 });

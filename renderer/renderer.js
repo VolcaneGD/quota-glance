@@ -39,6 +39,7 @@ const I18N = {
     switchLanguage: 'Switch to English',
     enterMinimumMode: 'ミニマムモードに切り替え',
     exitMinimumMode: '通常表示に戻す',
+    resetAlertSource: '投稿を開く',
   },
   en: {
     loading: 'Loading',
@@ -80,6 +81,7 @@ const I18N = {
     switchLanguage: '日本語に切り替える',
     enterMinimumMode: 'Switch to minimum mode',
     exitMinimumMode: 'Return to full view',
+    resetAlertSource: 'Open post',
   },
 };
 
@@ -104,12 +106,15 @@ const elements = {
   weeklyProgressFill: document.querySelector('#weekly-progress-fill'),
   weeklyResetTime: document.querySelector('#weekly-reset-time'),
   weeklyCountdown: document.querySelector('#weekly-countdown'),
+  resetAlert: document.querySelector('#reset-alert'),
+  resetAlertText: document.querySelector('#reset-alert-text'),
+  resetAlertLink: document.querySelector('#reset-alert-link'),
   updatedAt: document.querySelector('#updated-at'),
   planLabel: document.querySelector('#plan-label'),
   refreshButton: document.querySelector('#refresh-button'),
   minimumModeButton: document.querySelector('#minimum-mode-button'),
   opacity: document.querySelector('#opacity'), opacityLabel: document.querySelector('#opacity-label'), opacityValue: document.querySelector('#opacity-value'),
-  metricGpu: document.querySelector('#metric-gpu'), metricCpu: document.querySelector('#metric-cpu'), metricMem: document.querySelector('#metric-mem'), metricTemp: document.querySelector('#metric-temp'),
+  metricDrive: document.querySelector('#metric-drive'), metricGpu: document.querySelector('#metric-gpu'), metricCpu: document.querySelector('#metric-cpu'), metricMem: document.querySelector('#metric-mem'), metricTemp: document.querySelector('#metric-temp'),
   refreshInterval: document.querySelector('#refresh-interval'),
   refreshIntervalLabel: document.querySelector('#refresh-interval-label'),
   refreshIntervalValue: document.querySelector('#refresh-interval-value'),
@@ -133,6 +138,7 @@ let refreshIntervalDebounce = null;
 let minimumMode = false;
 let opacity = 1;
 let lastSystemMetrics = {};
+let currentResetFeed = null;
 
 const limitElements = {
   fiveHour: {
@@ -174,15 +180,16 @@ function renderOpacity() {
 }
 
 function renderMetrics(metrics = {}) {
-  for (const [key, suffix, kind] of [['gpu', '%', 'usage'], ['cpu', '%', 'usage'], ['mem', '%', 'usage'], ['temp', '°C', 'temp']]) {
+  for (const [key, suffix, kind] of [['drive', '%', 'free'], ['gpu', '%', 'usage'], ['cpu', '%', 'usage'], ['mem', '%', 'usage'], ['temp', '°C', 'temp']]) {
     const el = elements[`metric${key[0].toUpperCase()}${key.slice(1)}`];
     const value = metrics[key];
     if (Number.isFinite(value)) lastSystemMetrics[key] = value;
     const displayedValue = Number.isFinite(value) ? value : lastSystemMetrics[key];
     el.textContent = Number.isFinite(displayedValue) ? `${Math.round(displayedValue)}${suffix}` : '--';
-    el.className = Number.isFinite(displayedValue)
-      ? (displayedValue >= (kind === 'temp' ? 80 : 80) ? 'critical' : displayedValue >= (kind === 'temp' ? 60 : 50) ? 'warning' : 'good')
-      : '';
+    const tone = kind === 'free'
+      ? (displayedValue <= 30 ? 'critical' : displayedValue <= 50 ? 'warning' : 'good')
+      : (displayedValue >= 80 ? 'critical' : displayedValue >= (kind === 'temp' ? 60 : 50) ? 'warning' : 'good');
+    el.className = Number.isFinite(displayedValue) ? tone : '';
   }
 }
 
@@ -254,6 +261,19 @@ function applyLanguage() {
   renderRefreshInterval();
   applyMinimumMode();
   render(currentSnapshot);
+  renderResetAlert(currentResetFeed);
+}
+
+function renderResetAlert(state) {
+  currentResetFeed = state;
+  const event = state?.event;
+  elements.resetAlert.hidden = !event;
+  if (!event) return;
+
+  elements.resetAlertText.textContent = language === 'ja' ? event.messageJa : event.messageEn;
+  const sourceLabel = t('resetAlertSource');
+  elements.resetAlertLink.title = sourceLabel;
+  elements.resetAlertLink.setAttribute('aria-label', sourceLabel);
 }
 
 function renderLimit(limit, targets) {
@@ -364,8 +384,13 @@ elements.closeButton.addEventListener('click', () => window.codexUsage.close());
 elements.sourceButton.addEventListener('click', () => {
   if (currentSnapshot?.sourcePath) window.codexUsage.revealSource(currentSnapshot.sourcePath);
 });
+elements.resetAlertLink.addEventListener('click', () => {
+  const sourceUrl = currentResetFeed?.event?.sourceUrl;
+  if (sourceUrl) window.codexUsage.openExternal(sourceUrl);
+});
 
 window.codexUsage.onChanged(render);
+window.codexUsage.onResetFeedChanged(renderResetAlert);
 async function initialize() {
   await window.codexUsage.setLanguage(language);
   const milliseconds = Number.isFinite(savedRefreshSeconds)
@@ -378,6 +403,7 @@ async function initialize() {
   opacity = preferences.opacity;
   renderOpacity();
   renderMetrics(await window.codexUsage.getSystemMetrics());
+  renderResetAlert(await window.codexUsage.getResetFeed());
   const savedMinimumMode = localStorage.getItem('quota-glance-minimum-mode') === 'true';
   minimumMode = savedMinimumMode
     ? await window.codexUsage.setMinimumMode(true)

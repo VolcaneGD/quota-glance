@@ -7,9 +7,11 @@ Quota Glanceは、Codexがローカルに記録した利用状況を小さな常
 ## 主な機能
 
 - 残高・残りクレジット
+- Cドライブ空き容量、GPU、CPU、MEM、TEMPのコンパクトなリアルタイム表示
 - 5時間利用上限の残り割合と状態色（緑・黄・赤）
 - 週間利用上限の残り割合と状態色（緑・黄・赤）
 - 各制限枠のリセット日時（日本時間）と残り時間
+- OpenAIの公開告知をもとにしたリセット可能性の通知（該当告知がある場合のみ）
 - 日本語・英語の表示切替と設定保存
 - ファイル変更監視と1〜60秒で変更できるリアルタイム自動更新（既定5秒）
 - 常に手前に表示
@@ -36,9 +38,15 @@ Quota Glanceは、Codexがローカルに記録した利用状況を小さな常
 
 ## データ取得と制約
 
-Quota Glanceは認証トークンやAPIキーを読みません。`%CODEX_HOME%\sessions`、または未設定時の`%USERPROFILE%\.codex\sessions`にCodex自身が保存した最新の`rate_limits`情報だけを抽出します。データを外部へ送信する機能、テレメトリー、広告、解析機能はありません。
+Quota Glanceは認証トークンやAPIキーを読みません。`%CODEX_HOME%\sessions`、または未設定時の`%USERPROFILE%\.codex\sessions`にCodex自身が保存した最新の`rate_limits`情報だけを抽出します。テレメトリー、広告、解析機能はありません。
 
 表示値は「Codexが最後に利用状況をローカルへ記録した時点」の情報です。独立した公式APIからリアルタイム取得しているわけではありません。Codexを利用していない間にサーバー側だけで値が変わった場合は、次にCodexが応答を受け取ったときに同期されます。また、将来Codexのローカル記録形式が変更された場合、一時的に値を取得できなくなる可能性があります。
+
+### リセット可能性の通知
+
+アプリは公開されたJSONフィードを定期的に取得します。フィードには、OpenAIの公開投稿から検出した直近3日以内のリセット関連告知だけが含まれます。告知がない場合、通知カードは表示されません。表示後は、週間枠が100%に戻った時点、または表示時から48時間にわたり週間枠が変化しない場合に非表示になります。これは公式の利用上限APIではなく、告知を補助的に伝える機能です。
+
+フィードを運用する開発者は、リポジトリの`X_BEARER_TOKEN` Actions secretを設定してください。トークンはGitHub Actions内でのみ使用し、生成される公開フィードには含まれません。
 
 ## Windowsの警告について
 
@@ -70,7 +78,9 @@ npm.cmd run release
 
 Quota Glance is an unofficial freeware utility for Windows that displays usage information recorded locally by Codex in a compact always-available window.
 
-It shows the remaining credit balance, five-hour and weekly usage windows, separate reset times, and countdowns. The interface and tray menu can be switched between Japanese and English. Quota Glance reads local usage snapshots only; it does not read authentication tokens, use analytics, or transmit data.
+It shows the remaining credit balance, five-hour and weekly usage windows, separate reset times, and countdowns. When a qualifying public announcement is available, it can also show a reset advisory card. The interface and tray menu can be switched between Japanese and English. Quota Glance does not read authentication tokens or use analytics.
+
+The advisory reads a public JSON feed containing relevant posts from the preceding three days. No card is shown when no recent announcement is available. A displayed card is hidden when the weekly quota returns to 100%, or when the weekly quota has not changed for 48 hours after the card was displayed. This is an informational aid, not an official usage-limit API.
 
 Quota Glance is independently developed by VOLCANE. It is not provided, endorsed, sponsored, or supported by OpenAI. See [PRIVACY.md](PRIVACY.md), [NOTICE.md](NOTICE.md), and [LICENSE](LICENSE) for details.
 
