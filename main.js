@@ -14,12 +14,14 @@ let notificationTimer;
 let notificationQueue = Promise.resolve();
 const liveNotifications = new Set();
 function updateNotifications() {
-  notificationQueue = notificationQueue.then(() => resetNotifier?.update(resetFeedReader?.getState()?.events || [], reader.getSnapshot())).catch(error => console.warn('Notification processing failed:', error.message));
+  const usage = reader.getSnapshot();
+  const events = resetFeedReader?.getState()?.events || [];
+  notificationQueue = notificationQueue.then(() => resetNotifier?.update(events, usage)).catch(error => console.warn('Notification processing failed:', error.message));
 }
 function sendResetNotification(copy) {
   if (!Notification.isSupported()) return Promise.resolve(false);
   return new Promise(resolve => {
-    const notification = new Notification({ title: copy.title, body: copy.body, icon: path.join(__dirname, 'assets', 'icon.ico') });
+    const notification = new Notification({ title: copy.title, body: copy.body, silent: false, icon: path.join(__dirname, 'assets', 'icon.ico') });
     liveNotifications.add(notification);
     const timeout = setTimeout(() => { liveNotifications.delete(notification); resolve(false); }, 10000);
     notification.once('show', () => { clearTimeout(timeout); resolve(true); });

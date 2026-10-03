@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.5.1 - 2026-10-03
+
+- Persist local quota observations so 5-hour/weekly recovery can be detected across restarts.
+- Retry rejected Windows recovery/reset-time notifications for up to ten minutes without losing the pending transition.
+- Preserve the previous reset deadline when the next cycle arrives; capture usage snapshots before queued notification processing and explicitly request notification sound.
+
 ## 1.5.0 - 2026-10-03
 
 - Replaced reset predictions with structured reset announcements (schema v3).

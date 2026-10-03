@@ -7,6 +7,30 @@ const { ResetNotifier, normalizeNotifications } = require('../src/reset-notifier
 const { extractResetEvent } = require('../src/reset-event');
 const start = Date.parse('2026-10-03T13:00:00Z');
 const event = extractResetEvent({ id: '123', author: 'thsottiaux', verifiedOriginal: true, created_at: '2026-10-03T12:00:00Z', text: 'We will reset Codex usage limits for all users at 2pm UTC.' }, new Date(start).toISOString());
+
+test('5-hour recovery survives restart and retries failed Windows delivery', async () => {
+  const statePath = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'quota-recovery-')), 'state.json');
+  let attempts = 0;
+  const options = { statePath, now: () => start, send: async () => ++attempts > 1 };
+  await new ResetNotifier(options).update([], { fiveHour: { remainingPercent: 12 } });
+  const restarted = new ResetNotifier(options);
+  await restarted.update([], { fiveHour: { remainingPercent: 100 } });
+  assert.equal(attempts, 1);
+  await new ResetNotifier(options).update([], { fiveHour: { remainingPercent: 100 } });
+  assert.equal(attempts, 2);
+  await new ResetNotifier(options).update([], { fiveHour: { remainingPercent: 100 } });
+  assert.equal(attempts, 2);
+});
+
+test('next-cycle timestamp does not erase a due 5-hour reset notification', async () => {
+  let time = start; const sent = [];
+  const notifier = new ResetNotifier({ now: () => time, send: async copy => { sent.push(copy); return true; } });
+  await notifier.update([], { fiveHour: { remainingPercent: 4, resetsAt: new Date(start + 60000).toISOString() } });
+  time += 60000;
+  await notifier.update([], { fiveHour: { remainingPercent: 96, resetsAt: new Date(time + 5 * 3600000).toISOString() } });
+  assert.equal(sent.length, 1);
+  assert.match(sent[0].title, /5時間枠/);
+});
 test('detection, reminders and revision notifications are deduplicated across restart', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'quota-notifier-'));
   const statePath = path.join(dir, 'state.json'); let time = start; const sent = [];

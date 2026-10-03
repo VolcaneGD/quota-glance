@@ -22,8 +22,10 @@ function notificationCopy(event, kind, language = 'ja', minutes) {
 class ResetNotifier {
   constructor({ statePath = null, send, getSettings = () => DEFAULT_NOTIFICATIONS, getLanguage = () => 'ja', now = () => Date.now() } = {}) {
     Object.assign(this, { statePath, send, getSettings, getLanguage, now });
-    this.state = { events: {}, sent: {}, quotaSchedules: {} }; this.previousLimits = {};
+    this.state = { events: {}, sent: {}, quotaSchedules: {}, previousLimits: {}, pendingRecoveries: {} };
     try { const stored = JSON.parse(fs.readFileSync(statePath, 'utf8')); if (stored.events && stored.sent) this.state = stored; } catch {}
+    this.previousLimits = this.state.previousLimits ||= {};
+    this.state.pendingRecoveries ||= {};
   }
   persist() {
     if (!this.statePath) return;
@@ -40,8 +42,9 @@ class ResetNotifier {
       const limit = limits[window];
       const remaining = limit?.remainingPercent;
       const recovered = Number.isFinite(this.previousLimits[window]) && this.previousLimits[window] < 100 && remaining === 100;
+      if (recovered) this.state.pendingRecoveries[window] = { resetsAt: limit.resetsAt, observedAt: new Date(now).toISOString() };
+      if (now - Date.parse(this.state.pendingRecoveries[window]?.observedAt) >= 10 * 60000) delete this.state.pendingRecoveries[window];
       if (Number.isFinite(remaining)) this.previousLimits[window] = remaining;
-      if (Number.isFinite(Date.parse(limit?.resetsAt)) && Date.parse(limit.resetsAt) > now) this.state.quotaSchedules[window] = limit.resetsAt;
       const ja = this.getLanguage() !== 'en';
       const label = window === 'fiveHour' ? (ja ? '5時間枠' : '5-hour quota') : (ja ? '週間枠' : 'Weekly quota');
       const scheduledAt = this.state.quotaSchedules[window];
@@ -49,13 +52,20 @@ class ResetNotifier {
       const due = Number.isFinite(scheduled) && now >= scheduled && now - scheduled < 10 * 60000;
       if (settings.enabled && settings[window]) {
         const sendOnce = async (key, copy) => { if (!this.state.sent[key] && await this.send(copy)) this.state.sent[key] = new Date(now).toISOString(); };
-        if (settings.completed && recovered) {
+        const pending = this.state.pendingRecoveries[window];
+        if (settings.completed && pending) {
           const copy = notificationCopy({}, 'local', this.getLanguage());
           copy.body = ja ? `${label}：Codexのローカル記録で残り100%への回復を確認しました。OpenAI全体の完了確認ではありません。` : `${label}: Codex local records show quota restored to 100%. This does not confirm a global reset.`;
-          await sendOnce(`local:${window}:${limit.resetsAt || new Date(now).toISOString().slice(0, 10)}`, copy);
+          const key = `local:${window}:${pending.resetsAt || pending.observedAt}`;
+          await sendOnce(key, copy);
+          if (this.state.sent[key]) delete this.state.pendingRecoveries[window];
         }
         if (due && !recovered) await sendOnce(`quota-time:${window}:${scheduledAt}`, { title: ja ? `Quota Glance — ${label}のリセット時刻` : `Quota Glance — ${label} reset time`, body: ja ? 'Codexが記録した通常のリセット時刻になりました。利用枠への反映は次のローカル記録で確認します。' : 'The regular reset time recorded by Codex has arrived. Quota recovery awaits the next local record.' });
       }
+      // Evaluate the old deadline before accepting the next cycle's schedule.
+      const retryDeadline = due && !recovered && settings.enabled && settings[window] && !this.state.sent[`quota-time:${window}:${scheduledAt}`];
+      if (!retryDeadline && Number.isFinite(Date.parse(limit?.resetsAt)) && Date.parse(limit.resetsAt) > now) this.state.quotaSchedules[window] = limit.resetsAt;
+      if (!settings.enabled || !settings[window] || !settings.completed) delete this.state.pendingRecoveries[window];
     }
     for (const event of events) {
       const id = event.canonicalId || event.eventId;
