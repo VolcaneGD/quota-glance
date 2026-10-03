@@ -1,0 +1,23 @@
+// Development-only browser preview. All displayed data is synthetic.
+const http = require('node:http');
+const fs = require('node:fs');
+const path = require('node:path');
+const root = path.join(__dirname, '..', 'renderer');
+http.createServer((req, res) => {
+  const url = new URL(req.url, 'http://localhost');
+  if (url.pathname === '/preview.css') { const height = Math.min(1200, Math.max(652, Number(url.searchParams.get('height')) || 652)); res.setHeader('Content-Type', 'text/css'); return res.end(`html,body{width:372px;height:${height}px}.minimum-mode,.minimum-mode body{width:310px;height:310px}`); }
+  if (url.pathname === '/mock.js') {
+    res.setHeader('Content-Type', 'text/javascript');
+    return res.end(`const snapshot = {credits:{balance:434.53,hasCredits:true},weekly:{remainingPercent:18,resetsAt:new Date(Date.now()+5*86400000).toISOString()},fiveHour:{remainingPercent:42,resetsAt:new Date(Date.now()+7200000).toISOString()},planType:'plus',checkedAt:new Date().toISOString()};
+const mode = new URLSearchParams(location.search).get('state');
+const event={eventId:'demo',canonicalId:'demo',sourceUrl:'https://x.com/i/status/123',source:{type:'x',tier:2,author:'thsottiaux',url:'https://x.com/i/status/123'},publishedAt:new Date().toISOString(),status:mode==='completed'?'completed':'scheduled',certainty:mode==='secondary'?'secondary':'confirmed',scope:'paid_users',effectiveAt:new Date(Date.now()+3600000).toISOString(),effectiveAtPrecision:'exact',type:'scheduled_usage_reset'};
+let feed={event:mode==='empty'?null:event};let preferences={opacity:1,notifications:{enabled:true,confirmedOnly:true,announceDetection:true,beforeMinutes:[30,10],completed:true,secondarySources:false}};
+window.codexUsage={get:async()=>snapshot,refresh:async()=>snapshot,getRefreshInterval:async()=>5000,setRefreshInterval:async v=>v,getPreferences:async()=>preferences,getSystemMetrics:async()=>({drive:61,gpu:27,cpu:13,mem:65,temp:59}),getResetFeed:async()=>feed,refreshResetFeed:async()=>feed,onResetFeedChanged:()=>{},onChanged:()=>{},setLanguage:async v=>v,setOpacity:async v=>v,getMinimumMode:async()=>false,setMinimumMode:async v=>v,isPinned:async()=>true,togglePin:async()=>false,getXApiStatus:async()=>({configured:false,protected:true}),setXApiToken:async()=>({configured:true,protected:true}),clearXApiToken:async()=>{},setNotifications:async v=>(preferences.notifications=v),testNotification:async()=>true,minimize:()=>{},close:()=>{},openExternal:()=>{},revealSource:()=>{}};`);
+  }
+  const name = url.pathname === '/' ? 'index.html' : url.pathname.slice(1);
+  if (!['index.html', 'styles.css', 'renderer.js'].includes(name)) { res.writeHead(404); return res.end(); }
+  let content = fs.readFileSync(path.join(root, name), 'utf8');
+  if (name === 'index.html') content = content.replace('</head>', `<link rel="stylesheet" href="preview.css?height=${Number(url.searchParams.get('height')) || 652}"></head>`).replace('<script src="renderer.js">', '<script src="mock.js"></script><script src="renderer.js">');
+  res.setHeader('Content-Type', name.endsWith('html') ? 'text/html; charset=utf-8' : name.endsWith('css') ? 'text/css' : 'text/javascript');
+  res.end(content);
+}).listen(4177, '127.0.0.1', () => console.log('Synthetic Quota Glance preview: http://localhost:4177'));

@@ -1,18 +1,41 @@
 const path = require('node:path');
-const { app, BrowserWindow, ipcMain, Menu, nativeImage, safeStorage, shell, Tray } = require('electron');
+const { app, BrowserWindow, ipcMain, Menu, nativeImage, Notification, safeStorage, screen, shell, Tray } = require('electron');
 const { UsageReader } = require('./src/usage-reader');
 const { ResetFeedReader } = require('./src/reset-feed');
 const { collectSystemMetrics } = require('./src/system-metrics');
 const { loadWindowState, saveWindowState } = require('./src/window-state');
 const { SecureTokenStore } = require('./src/secure-token-store');
 const { XApiSource } = require('./src/x-api-source');
+const { OfficialSource } = require('./src/official-source');
+const { ResetNotifier, normalizeNotifications } = require('./src/reset-notifier');
+const { safeSourceUrl } = require('./src/reset-event');
+let resetNotifier;
+let notificationTimer;
+let notificationQueue = Promise.resolve();
+const liveNotifications = new Set();
+function updateNotifications() {
+  notificationQueue = notificationQueue.then(() => resetNotifier?.update(resetFeedReader?.getState()?.events || [], reader.getSnapshot())).catch(error => console.warn('Notification processing failed:', error.message));
+}
+function sendResetNotification(copy) {
+  if (!Notification.isSupported()) return Promise.resolve(false);
+  return new Promise(resolve => {
+    const notification = new Notification({ title: copy.title, body: copy.body, icon: path.join(__dirname, 'assets', 'icon.ico') });
+    liveNotifications.add(notification);
+    const timeout = setTimeout(() => { liveNotifications.delete(notification); resolve(false); }, 10000);
+    notification.once('show', () => { clearTimeout(timeout); resolve(true); });
+    notification.once('failed', () => { clearTimeout(timeout); liveNotifications.delete(notification); resolve(false); });
+    notification.once('close', () => liveNotifications.delete(notification));
+    notification.on('click', () => { mainWindow.show(); mainWindow.focus(); });
+    notification.show();
+  });
+}
 
 let mainWindow;
 let tray;
 let isQuitting = false;
 let uiLanguage = 'ja';
 let isMinimumMode = false;
-let standardWindowBounds = { width: 372, height: 652 };
+let standardWindowBounds = { width: 372, height: 800 };
 let preferences;
 let preferencesPath;
 let resetFeedReader;
@@ -70,14 +93,17 @@ function trayCopy() {
 }
 
 function createWindow() {
-  const bounds = preferences.bounds || { width: 372, height: 652 };
+  const bounds = preferences.bounds || { width: 372, height: 800 };
+  const display = Number.isFinite(bounds.x) && Number.isFinite(bounds.y)
+    ? screen.getDisplayMatching(bounds) : screen.getPrimaryDisplay();
+  const availableHeight = display.workArea.height;
   mainWindow = new BrowserWindow({
     x: bounds.x,
     y: bounds.y,
     width: Math.max(372, bounds.width),
-    height: Math.max(652, bounds.height),
+    height: Math.min(availableHeight, Math.max(800, bounds.height)),
     minWidth: 340,
-    minHeight: 604,
+    minHeight: Math.min(604, availableHeight),
     maxWidth: 460,
     show: false,
     frame: false,
@@ -127,7 +153,7 @@ function setMinimumMode(enabled) {
     mainWindow.setMinimumSize(340, 604);
     mainWindow.setSize(
       Math.max(372, standardWindowBounds.width),
-      Math.max(652, standardWindowBounds.height),
+      Math.min(screen.getDisplayMatching(mainWindow.getBounds()).workArea.height, Math.max(800, standardWindowBounds.height)),
       true,
     );
   }
@@ -194,13 +220,16 @@ if (hasSingleInstanceLock) {
   });
 
   app.whenReady().then(async () => {
+    app.setAppUserModelId('dev.volcane.quota-glance');
     preferencesPath = path.join(app.getPath('userData'), 'quota-glance-state.json');
     xApiTokenStore = new SecureTokenStore(path.join(app.getPath('userData'), 'quota-glance-x-api.json'), safeStorage);
     resetFeedReader = new ResetFeedReader({
       cachePath: path.join(app.getPath('userData'), 'quota-glance-reset-feed.json'),
       directSource: new XApiSource({ getToken: () => xApiTokenStore.getToken() }),
+      officialSource: new OfficialSource(),
     });
     preferences = loadWindowState(preferencesPath);
+    resetNotifier = new ResetNotifier({ statePath: path.join(app.getPath('userData'), 'quota-glance-notifications.json'), send: sendResetNotification, getSettings: () => preferences.notifications, getLanguage: () => uiLanguage });
     uiLanguage = preferences.language;
     reader.setRefreshInterval(preferences.refreshIntervalMs);
     createWindow();
@@ -208,17 +237,19 @@ if (hasSingleInstanceLock) {
     createTray();
     reader.on('change', publish);
     resetFeedReader.on('change', (state) => {
+      updateNotifications();
       if (mainWindow && !mainWindow.isDestroyed()) {
         mainWindow.webContents.send('reset-feed:changed', state);
       }
     });
     await reader.start();
     await resetFeedReader.start();
+    notificationTimer = setInterval(() => { resetFeedReader.publish('synced'); }, 15000);
   });
 }
 
 app.on('window-all-closed', (event) => event.preventDefault());
-app.on('before-quit', () => { isQuitting = true; reader.stop(); resetFeedReader?.stop(); });
+app.on('before-quit', () => { isQuitting = true; clearInterval(notificationTimer); reader.stop(); resetFeedReader?.stop(); });
 
 ipcMain.handle('usage:get', () => reader.getSnapshot());
 ipcMain.handle('usage:refresh', () => reader.refresh());
@@ -231,11 +262,20 @@ ipcMain.handle('x-api:get-status', () => xApiTokenStore?.status() || { configure
 ipcMain.handle('x-api:set-token', async (_event, token) => { const status = xApiTokenStore.setToken(token); await resetFeedReader.refresh(); return status; });
 ipcMain.handle('x-api:clear-token', () => xApiTokenStore.clear());
 ipcMain.handle('app:get-preferences', () => preferences);
+ipcMain.handle('notifications:set', (_event, value) => { preferences.notifications = normalizeNotifications(value); savePreferences(); updateNotifications(); return preferences.notifications; });
+ipcMain.handle('notifications:test', () => sendResetNotification({ title: 'Quota Glance', body: uiLanguage === 'ja' ? 'Windows通知のテストです。' : 'Windows notification test.' }));
 ipcMain.handle('app:set-opacity', (_event, opacity) => {
   preferences.opacity = Math.min(1, Math.max(0.4, Number(opacity) || 1));
   mainWindow.setOpacity(preferences.opacity); savePreferences(); return preferences.opacity;
 });
 ipcMain.handle('window:get-minimum-mode', () => isMinimumMode);
+ipcMain.handle('window:fit-content', (_event, requiredHeight) => {
+  if (isMinimumMode || !Number.isFinite(requiredHeight)) return;
+  const bounds = mainWindow.getBounds();
+  const area = screen.getDisplayMatching(bounds).workArea;
+  const height = Math.min(area.height, Math.max(bounds.height, Math.ceil(requiredHeight)));
+  if (height > bounds.height) mainWindow.setBounds({ ...bounds, height, y: Math.max(area.y, Math.min(bounds.y, area.y + area.height - height)) });
+});
 ipcMain.handle('window:set-minimum-mode', (_event, enabled) => { const value = setMinimumMode(enabled); savePreferences(); return value; });
 ipcMain.handle('window:toggle-pin', () => {
   const pinned = !mainWindow.isAlwaysOnTop();
@@ -259,7 +299,7 @@ ipcMain.on('source:reveal', (_event, sourcePath) => {
   }
 });
 ipcMain.on('external:open', (_event, url) => {
-  if (typeof url === 'string' && /^https:\/\/x\.com\/i\/status\/\d+$/.test(url)) {
-    shell.openExternal(url);
+  if (typeof url === 'string' && safeSourceUrl(url)) {
+    shell.openExternal(safeSourceUrl(url));
   }
 });

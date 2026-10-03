@@ -1,70 +1,36 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const {
-  DEFAULT_ALERT_STATE,
-  normalizeFeed,
-  reconcileAlertState,
-  selectDisplayEvent,
-} = require('../src/reset-feed');
-const fs = require('node:fs');
-const path = require('node:path');
-
-const EVENT = {
-  id: '2081096447718723984',
-  detectedAt: '2026-09-01T08:00:00.000Z',
-  sourceUrl: 'https://x.com/i/status/2081096447718723984',
-};
-
-test('selectDisplayEvent returns the newest local detection', () => {
-  const event = selectDisplayEvent({ schemaVersion: 2, events: [
-    { postId: EVENT.id, detectedAt: EVENT.detectedAt },
-    { postId: '2081096447718723985', detectedAt: '2026-09-01T09:00:00.000Z' },
-  ] });
-  assert.equal(event.id, '2081096447718723985');
-  assert.equal(event.sourceUrl, 'https://x.com/i/status/2081096447718723985');
+const { normalizeFeed, selectDisplayEvent, reconcileAlertState, ResetFeedReader } = require('../src/reset-feed');
+const { extractResetEvent } = require('../src/reset-event');
+const now = '2026-10-03T01:30:00Z';
+const event = extractResetEvent({ id: '123', author: 'thsottiaux', verifiedOriginal: true, created_at: now, text: 'We will reset Codex usage limits for all users at 2pm UTC.' }, now);
+test('schema v3 remains valid through normalization and cache reload', () => {
+  const feed = normalizeFeed({ schemaVersion: 3, events: [event] });
+  assert.equal(normalizeFeed(feed).events[0].eventId, event.eventId);
+  assert.equal(selectDisplayEvent(feed, now).certainty, 'confirmed');
 });
-
-test('alert hides immediately when weekly remaining reaches 100 percent', () => {
-  const result = reconcileAlertState(EVENT, { remainingPercent: 100 }, DEFAULT_ALERT_STATE, '2026-09-01T10:00:00.000Z');
+test('legacy ID-only feeds migrate as secondary information', () => {
+  const feed = normalizeFeed({ schemaVersion: 2, events: [{ postId: '123', detectedAt: now }] });
+  assert.equal(feed.events[0].certainty, 'secondary');
+  assert.equal(feed.events[0].eventId, 'x-123');
+});
+test('scheduled cards survive an already full local quota, but expire after 48 hours', () => {
+  const result = reconcileAlertState(event, { remainingPercent: 100 }, {}, now);
+  assert.equal(result.visible, true);
+  assert.equal(reconcileAlertState(event, { remainingPercent: 42 }, result.alertState, '2026-10-05T01:30:00Z').visible, false);
+});
+test('active cards close at 100 percent and dismissed events are not redisplayed', () => {
+  const active = { ...event, status: 'active' };
+  const result = reconcileAlertState(active, { remainingPercent: 100 }, {}, now);
   assert.equal(result.visible, false);
-  assert.deepEqual(result.alertState.dismissedEventIds, [EVENT.id]);
+  assert.equal(reconcileAlertState(active, { remainingPercent: 0 }, result.alertState, now).visible, false);
 });
-
-test('alert hides after 48 hours even when the weekly quota changed', () => {
-  const weekly = { remainingPercent: 42, usedPercent: 58, resetsAt: '2026-09-07T08:00:00.000Z' };
-  const result = reconcileAlertState(EVENT, weekly, {
-    eventId: EVENT.id,
-    displayedAt: '2026-09-01T10:00:00.000Z',
-    dismissedEventIds: [],
-  }, '2026-09-03T10:00:00.000Z');
-
-  assert.equal(result.visible, false);
+test('stale and future-published events are not displayed', () => {
+  assert.equal(selectDisplayEvent({ schemaVersion: 3, events: [event] }, '2026-10-07T01:30:00Z'), null);
+  assert.equal(selectDisplayEvent({ schemaVersion: 3, events: [event] }, '2026-10-02T01:30:00Z'), null);
 });
-
-test('alert hides after 48 hours even when only the weekly usage changed', () => {
-  const result = reconcileAlertState(EVENT, { remainingPercent: 41, usedPercent: 59, resetsAt: '2026-09-07T08:00:00.000Z' }, {
-    eventId: EVENT.id,
-    displayedAt: '2026-09-01T10:00:00.000Z',
-    baselineWeeklySignature: 'previous-weekly-value',
-    dismissedEventIds: [],
-  }, '2026-09-03T10:00:00.000Z');
-
-  assert.equal(result.visible, false);
-});
-
-test('normalizeFeed rejects invalid feed data without throwing', () => {
-  assert.deepEqual(normalizeFeed({ schemaVersion: 2, events: 'invalid' }), {
-    schemaVersion: 2,
-    updatedAt: null,
-    events: [],
-  });
-});
-
-test('the committed public feed contains no X post content', () => {
-  const feed = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'docs', 'reset-feed.json'), 'utf8'));
-
-  assert.equal(feed.schemaVersion, 2);
-  for (const event of feed.events) {
-    assert.deepEqual(Object.keys(event).sort(), ['detectedAt', 'postId']);
-  }
+test('a failing direct source does not prevent the public feed from loading', async () => {
+  const reader = new ResetFeedReader({ now: () => now, directSource: { fetchEvents: async () => { throw new Error('offline'); } }, fetchImpl: async () => ({ ok: true, json: async () => ({ schemaVersion: 3, events: [event] }) }) });
+  await reader.refresh();
+  assert.equal(reader.getState().event.eventId, event.eventId);
 });

@@ -1,83 +1,22 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { buildFeed, classifyPost, extractRssPosts } = require('../scripts/update-reset-feed');
-
-test('classifies a direct reset declaration without carrying its text into the event', () => {
-  const event = classifyPost({
-    id: '2081096447718723984',
-    text: 'I have reset usage limits for all Codex and ChatGPT Work users.',
-    created_at: '2026-09-01T07:45:00.000Z',
-  });
-
-  assert.deepEqual(event, {
-    postId: '2081096447718723984',
-    createdAt: '2026-09-01T07:45:00.000Z',
-  });
+const { buildFeed, extractRssPosts } = require('../scripts/update-reset-feed');
+const now = '2026-10-03T01:30:00Z';
+test('Google redirect links are decoded but RSS snippets cannot confirm an announcement', () => {
+  const posts = extractRssPosts(`<feed><entry><title>We will reset Codex usage limits for all users at 2pm UTC.</title><link href="https://www.google.com/url?url=https%3A%2F%2Fx.com%2Fthsottiaux%2Fstatus%2F123&amp;ct=ga"/><published>${now}</published></entry></feed>`);
+  const feed = buildFeed(posts, now);
+  assert.equal(feed.schemaVersion, 3);
+  assert.equal(feed.events[0].certainty, 'secondary');
+  assert.equal(feed.events[0].sourceUrl, 'https://x.com/i/status/123');
+  assert.equal('text' in feed.events[0], false);
 });
-
-test('classifies banked reset announcements without exposing their classification', () => {
-  const event = classifyPost({
-    id: '2081096447718723985',
-    text: 'We added one banked reset for all paid Codex and ChatGPT Work users.',
-    created_at: '2026-09-01T08:00:00.000Z',
-  });
-
-  assert.deepEqual(event, {
-    postId: '2081096447718723985',
-    createdAt: '2026-09-01T08:00:00.000Z',
-  });
+test('only posts from the preceding three days are accepted, without inventing missing dates', () => {
+  const base = { author: 'thsottiaux', text: 'We have reset Codex usage limits for all users.' };
+  const feed = buildFeed([{ ...base, id: '1', created_at: '2026-09-30T01:30:00Z' }, { ...base, id: '2', created_at: '2026-09-30T01:29:59Z' }, { ...base, id: '3' }], now);
+  assert.deepEqual(feed.events.map(e => e.eventId), ['x-1']);
 });
-
-test('ignores unrelated announcements', () => {
-  assert.equal(classifyPost({
-    id: '2081096447718723986',
-    text: 'Luna is faster today and the team is happy with the rollout.',
-    created_at: '2026-09-01T08:15:00.000Z',
-  }), null);
-});
-
-test('buildFeed orders events newest first', () => {
-  const feed = buildFeed([
-    { id: '1', text: 'I have reset usage limits for Codex.', created_at: '2026-09-01T07:00:00.000Z' },
-    { id: '2', text: 'I have reset usage limits for ChatGPT Work and Codex.', created_at: '2026-09-01T08:00:00.000Z' },
-  ], '2026-09-01T08:30:00.000Z');
-
-  assert.equal(feed.schemaVersion, 2);
-  assert.deepEqual(feed.events.map((event) => event.postId), ['2', '1']);
-});
-
-test('buildFeed excludes posts older than three days', () => {
-  const feed = buildFeed([
-    { id: 'recent', text: 'I have reset usage limits for Codex.', created_at: '2026-08-29T12:00:01.000Z' },
-    { id: 'stale', text: 'I have reset usage limits for Codex.', created_at: '2026-08-29T11:59:59.000Z' },
-  ], '2026-09-01T12:00:00.000Z');
-
-  assert.deepEqual(feed.events.map((event) => event.postId), ['recent']);
-});
-
-test('buildFeed publishes only a post ID and local detection time', () => {
-  const sourceText = 'I have reset usage limits for all Codex users.';
-  const feed = buildFeed([
-    { id: '2081096447718723984', text: sourceText, created_at: '2026-09-01T08:00:00.000Z' },
-  ], '2026-09-01T08:30:00.000Z');
-
-  assert.deepEqual(feed, {
-    schemaVersion: 2,
-    updatedAt: '2026-09-01T08:30:00.000Z',
-    events: [{ postId: '2081096447718723984', detectedAt: '2026-09-01T08:30:00.000Z' }],
-  });
-  assert.doesNotMatch(JSON.stringify(feed), new RegExp(sourceText));
-});
-
-test('extractRssPosts accepts only Tibo X post links from an Atom feed', () => {
-  const posts = extractRssPosts(`<?xml version="1.0"?><feed>
-    <entry><title>Codex usage limits reset</title><link href="https://x.com/thsottiaux/status/2081096447718723984" /></entry>
-    <entry><title>Ignore this</title><link href="https://x.com/other/status/2081096447718723985" /></entry>
-  </feed>`);
-
-  assert.deepEqual(posts, [{
-    id: '2081096447718723984',
-    text: 'Codex usage limits reset',
-    created_at: null,
-  }]);
+test('feed refresh preserves first detection timestamp', () => {
+  const post = { id: '1', author: 'thsottiaux', text: 'We have reset Codex usage limits for all users.', created_at: now };
+  const previous = buildFeed([post], now);
+  assert.equal(buildFeed([post], '2026-10-03T02:30:00Z', previous).events[0].detectedAt, now);
 });

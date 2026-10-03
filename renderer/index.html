@@ -71,12 +71,21 @@
           <span id="weekly-reset-time">—</span>
           <span id="weekly-countdown">—</span>
         </div>
-        <div id="reset-alert" class="reset-alert" hidden>
-          <span id="reset-alert-text"></span>
-          <button id="reset-alert-link" class="reset-alert-link" type="button">X</button>
-        </div>
+        <p id="local-reset-observation" class="subtle" hidden></p>
       </section>
 
+      <section id="reset-alert" class="reset-alert announcement-card" aria-labelledby="reset-schedule-label" hidden>
+          <p id="reset-schedule-label" class="eyebrow">リセットスケジュール</p>
+          <div class="announcement-heading"><strong id="reset-alert-text"></strong><span id="reset-certainty" class="announcement-certainty"></span></div>
+          <p id="reset-details"></p>
+          <p id="reset-countdown"></p>
+          <p id="reset-sources"></p>
+          <button id="reset-alert-link" class="reset-alert-link" type="button">原典を見る</button>
+      </section>
+
+      <details class="settings-panel">
+      <summary id="settings-summary">設定</summary>
+      <div class="settings-content">
       <section class="refresh-settings" aria-labelledby="refresh-interval-label">
         <div class="refresh-settings-heading">
           <label id="refresh-interval-label" for="refresh-interval">更新頻度</label>
@@ -87,12 +96,29 @@
         <input id="opacity" type="range" min="40" max="100" step="1" value="100" aria-label="透明度" />
       </section>
 
-      <section class="x-api-settings" aria-labelledby="x-api-label">
+      <details class="notification-settings">
+        <summary id="notification-summary">告知・Windows通知</summary>
+        <label><input id="notify-enabled" type="checkbox" checked /><span id="notify-enabled-label">Windows通知</span></label>
+        <label><input id="notify-five-hour" type="checkbox" checked /><span id="notify-five-hour-label">5時間枠のリセット通知</span></label>
+        <label><input id="notify-weekly" type="checkbox" checked /><span id="notify-weekly-label">週間枠のリセット通知</span></label>
+        <label><input id="notify-confirmed" type="checkbox" checked /><span id="notify-confirmed-label">確定告知のみ</span></label>
+        <label><input id="notify-detection" type="checkbox" checked /><span id="notify-detection-label">告知取得時</span></label>
+        <label><input id="notify-completed" type="checkbox" checked /><span id="notify-completed-label">実施済み・ローカル回復</span></label>
+        <label><input id="notify-secondary" type="checkbox" /><span id="notify-secondary-label">参考情報も通知</span></label>
+        <label class="reminder-setting"><span id="notify-before-label">何分前に通知</span><input id="notify-before" type="text" value="30, 10" inputmode="numeric" aria-label="通知する分数" /></label>
+        <p id="notification-result" role="status"></p>
+        <button id="notify-test" class="refresh-button" type="button">通知テスト</button>
+      </details>
+      <details class="x-api-settings" aria-labelledby="x-api-label">
+        <summary id="x-api-summary">情報取得・X API</summary>
         <div class="refresh-settings-heading"><label id="x-api-label" for="x-api-token">任意のX API</label><output id="x-api-status">RSS</output></div>
         <p id="x-api-note">既定ではGoogleアラートRSSを使用します。</p>
         <input id="x-api-token" type="password" autocomplete="off" spellcheck="false" placeholder="Bearer Token" />
         <div class="x-api-actions"><button id="x-api-save" type="button">保存</button><button id="x-api-clear" type="button">削除</button></div>
-      </section>
+      </details>
+
+      </div>
+      </details>
 
       <footer>
         <button id="source-button" class="source-button" title="取得元ファイルを表示">

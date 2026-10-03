@@ -1,0 +1,7 @@
+{
+  "xAccounts": ["thsottiaux", "OpenAI", "OpenAIDevs"],
+  "officialHosts": ["openai.com", "help.openai.com", "status.openai.com"],
+  "secondaryHosts": ["www.itmedia.co.jp", "www.theverge.com", "techcrunch.com", "arstechnica.com"],
+  "officialFeeds": ["https://status.openai.com/history.rss"],
+  "officialPages": []
+}

@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.5.0 - 2026-10-03
+
+- Replaced reset predictions with structured reset announcements (schema v3).
+- Distinguished confirmed, official incomplete and secondary information; RSS snippets alone never confirm a reset.
+- Added direct official status monitoring, configurable source accounts, explicit timezone/date parsing and relative time windows.
+- Added native Windows notifications for detection, configurable 30/10-minute reminders, completion, revisions and local quota recovery.
+- Persisted notification history to prevent duplicate delivery after restart.
+- Added independent 5-hour/weekly notification switches and recorded regular-reset-time notifications.
+- Added bilingual announcement cards and collapsible notification settings in the existing compact UI.
+- Kept local quota recovery separate from global announcements; retained the 48-hour card expiry.
+
 ## 1.4.6 - 2026-09-01
 
 - Made Google Alerts RSS the default reset-advisory source.

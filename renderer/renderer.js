@@ -42,7 +42,7 @@ const I18N = {
     resetAlert: '利用上限リセットの告知を検知しました',
     resetAlertSource: '原典を開く',
     xApiLabel: '任意のX API',
-    xApiDefault: '既定ではGoogleアラートRSSを使用します。自分のBearer Tokenを保存すると、端末上で直接確認します。',
+    xApiDefault: '公式ステータスと公開フィードを確認します。GoogleアラートRSSは参考情報です。自分のX APIは任意です（料金はXの契約によります）。',
     xApiRss: 'RSS',
     xApiConfigured: 'X API',
     xApiUnavailable: '暗号化不可',
@@ -92,7 +92,7 @@ const I18N = {
     resetAlert: 'A usage-limit reset announcement was detected',
     resetAlertSource: 'Open source',
     xApiLabel: 'Optional X API',
-    xApiDefault: 'Google Alerts RSS is used by default. Save your own Bearer Token for a direct local check.',
+    xApiDefault: 'Checks official status and the public feed. Google Alerts RSS is reference information. Your own X API is optional (X charges may apply).',
     xApiRss: 'RSS',
     xApiConfigured: 'X API',
     xApiUnavailable: 'Encryption unavailable',
@@ -125,6 +125,7 @@ const elements = {
   resetAlert: document.querySelector('#reset-alert'),
   resetAlertText: document.querySelector('#reset-alert-text'),
   resetAlertLink: document.querySelector('#reset-alert-link'),
+  resetCertainty: document.querySelector('#reset-certainty'), resetDetails: document.querySelector('#reset-details'), resetCountdown: document.querySelector('#reset-countdown'), resetSources: document.querySelector('#reset-sources'),
   updatedAt: document.querySelector('#updated-at'),
   planLabel: document.querySelector('#plan-label'),
   refreshButton: document.querySelector('#refresh-button'),
@@ -156,6 +157,10 @@ let minimumMode = false;
 let opacity = 1;
 let lastSystemMetrics = {};
 let currentResetFeed = null;
+let notificationSettings = {};
+let lastAnnouncementLayout = '';
+function fitWindowContent() { requestAnimationFrame(() => window.codexUsage.fitContent?.(document.querySelector('.app-shell').scrollHeight + 2)); }
+for (const details of document.querySelectorAll('details')) details.addEventListener('toggle', fitWindowContent);
 
 const limitElements = {
   fiveHour: {
@@ -223,6 +228,7 @@ function applyMinimumMode() {
   const label = t(minimumMode ? 'exitMinimumMode' : 'enterMinimumMode');
   elements.minimumModeButton.title = label;
   elements.minimumModeButton.setAttribute('aria-label', label);
+  renderResetAlert(currentResetFeed);
 }
 
 function formatNumber(value) {
@@ -275,6 +281,7 @@ function applyLanguage() {
   elements.refreshIntervalLabel.textContent = t('refreshInterval');
   elements.refreshInterval.setAttribute('aria-label', t('refreshIntervalAria'));
   elements.opacityLabel.textContent = language === 'ja' ? '透明度' : 'Opacity';
+  elements.opacity.setAttribute('aria-label', elements.opacityLabel.textContent);
   elements.xApiLabel.textContent = t('xApiLabel');
   elements.xApiNote.textContent = t('xApiDefault');
   elements.xApiSave.textContent = t('xApiSave');
@@ -283,6 +290,8 @@ function applyLanguage() {
   applyMinimumMode();
   render(currentSnapshot);
   renderResetAlert(currentResetFeed);
+  renderNotificationSettings();
+  renderXApiStatus();
 }
 
 async function renderXApiStatus() {
@@ -295,14 +304,61 @@ async function renderXApiStatus() {
 function renderResetAlert(state) {
   currentResetFeed = state;
   const event = state?.event;
+  const layout = event ? JSON.stringify([event.eventId, event.revision, event.status, language, minimumMode]) : `empty-${minimumMode}`;
+  if (layout !== lastAnnouncementLayout) { lastAnnouncementLayout = layout; fitWindowContent(); }
+  const observation = document.getElementById('local-reset-observation');
+  observation.hidden = !state?.localObservation;
+  observation.textContent = language === 'ja' ? 'ローカル記録で週間残り100%への回復を確認。全体リセットの完了確認ではありません。' : 'Local records show weekly quota restored to 100%. A global reset is not confirmed.';
   elements.resetAlert.hidden = !event;
   if (!event) return;
 
-  elements.resetAlertText.textContent = t('resetAlert');
+  const ja = language === 'ja';
+  const statusLabels = ja ? { scheduled: 'リセット予定', active: 'リセット実施中', completed: 'リセット実施済み' } : { scheduled: 'Reset scheduled', active: 'Reset in progress', completed: 'Reset completed' };
+  elements.resetAlertText.textContent = event.certainty === 'confirmed' ? statusLabels[event.status] : ja ? 'リセット関連情報' : 'Reset-related information';
+  elements.resetAlert.dataset.certainty = event.certainty;
+  elements.resetCertainty.textContent = (ja ? { confirmed: '確定', official: '公式情報', secondary: '参考情報' } : { confirmed: 'CONFIRMED', official: 'OFFICIAL', secondary: 'SECONDARY' })[event.certainty] || (ja ? '未確認' : 'UNCONFIRMED');
+  const scope = (ja ? { all_users: '全ユーザー', paid_users: '有料ユーザー', unknown: '未発表' } : { all_users: 'All users', paid_users: 'Paid users', unknown: 'Unspecified' })[event.scope] || event.scope;
+  const descriptions = ja ? { today: '投稿日当日・時刻未発表', 'later today': '投稿日当日中・時刻未発表', tomorrow: '投稿日翌日・時刻未発表', 'this evening': '投稿日の夕方・時刻とタイムゾーン未発表', soon: '近日・時刻未発表', shortly: 'まもなく・時刻未発表' } : {};
+  let when = event.effectiveAt ? `${formatDate(event.effectiveAt)} JST` : descriptions[event.timeDescription] || event.timeDescription || (ja ? '未発表' : 'Unspecified');
+  if (event.effectiveAtWindow) when = `${formatDate(event.effectiveAtWindow.from)} ～ ${formatDate(event.effectiveAtWindow.to)} JST`;
+  let details = `${ja ? '対象' : 'Scope'}：${scope}\n${ja ? '実施' : 'When'}：${when}`;
+  if (event.previousEffectiveAt) details += `\n${ja ? '変更前' : 'Previously'}：${formatDate(event.previousEffectiveAt)} JST`;
+  if (event.certainty !== 'confirmed') details += ja ? '\n公式の確定告知は未確認です。' : '\nA confirmed official announcement has not been verified.';
+  if (event.type === 'banked_reset') details += ja ? '\n任意に使用するbanked resetです。' : '\nA banked reset, available for manual use.';
+  elements.resetDetails.textContent = minimumMode && event.effectiveAt ? `${new Intl.DateTimeFormat(ja ? 'ja-JP' : 'en-US', { timeZone: 'Asia/Tokyo', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(event.effectiveAt))} JST` : details;
+  elements.resetDetails.title = details;
+  elements.resetCountdown.textContent = event.status === 'scheduled' && event.effectiveAt ? (Date.parse(event.effectiveAt) > Date.now() ? formatCountdown(event.effectiveAt) : ja ? '予定時刻を経過・実施確認待ち' : 'Scheduled time passed; awaiting confirmation') : '';
+  const sourceNames = (event.sources || [event.source]).map(s => s.author ? `@${s.author}` : new URL(s.url).hostname);
+  elements.resetSources.textContent = `${ja ? '情報源' : 'Sources'}：${[...new Set(sourceNames)].join(' · ')}\n${ja ? '投稿' : 'Published'}：${formatDate(event.publishedAt)}`;
   const sourceLabel = t('resetAlertSource');
+  elements.resetAlertLink.textContent = sourceLabel;
   elements.resetAlertLink.title = sourceLabel;
   elements.resetAlertLink.setAttribute('aria-label', sourceLabel);
 }
+
+function renderNotificationSettings() {
+  const ja = language === 'ja';
+  const labels = ja ? ['告知・Windows通知', 'Windows通知', '確定告知のみ', '告知取得時', '実施済み・ローカル回復', '参考情報も通知', '何分前に通知', '通知テスト', '情報取得・X API'] : ['Announcements & notifications', 'Windows notifications', 'Confirmed only', 'On detection', 'Completed & local recovery', 'Include reference information', 'Minutes before', 'Test notification', 'Sources & X API'];
+  document.getElementById('settings-summary').textContent = ja ? '設定' : 'Settings';
+  document.getElementById('reset-schedule-label').textContent = ja ? 'リセットスケジュール' : 'Reset schedule';
+  ['notification-summary', 'notify-enabled-label', 'notify-confirmed-label', 'notify-detection-label', 'notify-completed-label', 'notify-secondary-label', 'notify-before-label', 'notify-test', 'x-api-summary'].forEach((id, i) => document.getElementById(id).textContent = labels[i]);
+  for (const [id, key] of [['enabled', 'enabled'], ['confirmed', 'confirmedOnly'], ['detection', 'announceDetection'], ['completed', 'completed'], ['secondary', 'secondarySources']]) document.getElementById(`notify-${id}`).checked = notificationSettings[key] !== false && (key !== 'secondarySources' || notificationSettings[key] === true);
+  document.getElementById('notify-before').value = (notificationSettings.beforeMinutes || [30, 10]).join(', ');
+  document.getElementById('notify-before').setAttribute('aria-label', labels[6]);
+  document.getElementById('notify-five-hour-label').textContent = ja ? '5時間枠のリセット通知' : '5-hour reset notifications';
+  document.getElementById('notify-weekly-label').textContent = ja ? '週間枠のリセット通知' : 'Weekly reset notifications';
+  document.getElementById('notify-five-hour').checked = notificationSettings.fiveHour !== false;
+  document.getElementById('notify-weekly').checked = notificationSettings.weekly !== false;
+}
+document.querySelector('.notification-settings').addEventListener('change', async () => {
+  const values = document.getElementById('notify-before').value.split(',').map(v => Number(v.trim())).filter(n => Number.isInteger(n) && n > 0 && n <= 1440);
+  notificationSettings = await window.codexUsage.setNotifications({ enabled: document.getElementById('notify-enabled').checked, fiveHour: document.getElementById('notify-five-hour').checked, weekly: document.getElementById('notify-weekly').checked, confirmedOnly: document.getElementById('notify-confirmed').checked, announceDetection: document.getElementById('notify-detection').checked, completed: document.getElementById('notify-completed').checked, secondarySources: document.getElementById('notify-secondary').checked, beforeMinutes: values });
+  renderNotificationSettings();
+});
+document.getElementById('notify-test').addEventListener('click', async () => {
+  const shown = await window.codexUsage.testNotification();
+  document.getElementById('notification-result').textContent = language === 'ja' ? (shown ? 'Windowsに通知を送信しました。' : '通知を送信できませんでした。Windowsの通知設定をご確認ください。') : (shown ? 'Notification sent to Windows.' : 'Unable to send. Check Windows notification settings.');
+});
 
 function renderLimit(limit, targets) {
   const remaining = limit?.remainingPercent;
@@ -440,6 +496,7 @@ async function initialize() {
   renderRefreshInterval();
   currentSnapshot = await window.codexUsage.get();
   const preferences = await window.codexUsage.getPreferences();
+  notificationSettings = preferences.notifications || {};
   opacity = preferences.opacity;
   renderOpacity();
   renderMetrics(await window.codexUsage.getSystemMetrics());
@@ -450,10 +507,12 @@ async function initialize() {
     ? await window.codexUsage.setMinimumMode(true)
     : await window.codexUsage.getMinimumMode();
   applyLanguage();
+  fitWindowContent();
 }
 initialize();
 window.codexUsage.isPinned().then((pinned) => elements.pinButton.classList.toggle('active', pinned));
 setInterval(() => {
+  renderResetAlert(currentResetFeed);
   if (currentSnapshot?.fiveHour?.resetsAt) {
     elements.fiveHourCountdown.textContent = formatCountdown(currentSnapshot.fiveHour.resetsAt);
   }

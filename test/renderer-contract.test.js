@@ -59,6 +59,8 @@ test('reset alert card is rendered and remains available in minimum mode', () =>
   assert.match(html, /id="reset-alert"/);
   assert.match(html, /id="reset-alert-text"/);
   assert.match(html, /id="reset-alert-link"/);
+  assert.match(html, /<section id="reset-alert" class="reset-alert announcement-card"/);
+  assert.match(html, /id="local-reset-observation"[^>]*><\/p>\s*<\/section>\s*<section id="reset-alert"/);
   assert.match(script, /function renderResetAlert\(/);
   assert.doesNotMatch(css, /\.minimum-mode\s+#reset-alert\s*\{\s*display\s*:\s*none/);
 });
@@ -77,6 +79,6 @@ test('残り割合の色分岐とミニマムモードの契約を維持する',
   assert.match(css, /\.minimum-mode \.app-shell/);
   assert.doesNotMatch(css, /\.minimum-mode \.status-strip\s*\{\s*display\s*:\s*none/);
   assert.match(main, /mainWindow\.setSize\(310, 310, true\);/);
-  assert.match(main, /height: 652/);
-  assert.match(main, /Math\.max\(652, bounds\.height\)/);
+  assert.match(main, /height: 800/);
+  assert.match(main, /Math\.max\(800, bounds\.height\)/);
 });
