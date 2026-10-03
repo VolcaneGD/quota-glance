@@ -11,11 +11,6 @@
         if (Number.isFinite(this.previous[window]) && this.previous[window] < 100 && value === 100) recovered = true;
         this.previous[window] = value;
       }
-      const balance = snapshot.credits?.unlimited ? undefined : snapshot.credits?.balance;
-      if (Number.isFinite(balance)) {
-        if (Number.isFinite(this.previous.balance) && balance > this.previous.balance) recovered = true;
-        this.previous.balance = balance;
-      }
       return recovered;
     }
   }

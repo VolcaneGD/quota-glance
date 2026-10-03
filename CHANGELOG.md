@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.5.4 - 2026-10-04
+
+- Remove the credit-increase glow effect entirely, preventing delayed wallet balances from producing false recovery effects.
+- Keep green sweeps exclusively for 5-hour/weekly quota recovery to 100%, and yellow sweeps for scheduled-reset notifications.
+
 ## 1.5.3 - 2026-10-04
 
 - Ignore non-Codex rate-limit buckets so premium records cannot erase the 5-hour/weekly quota or replace the Codex credit balance.
