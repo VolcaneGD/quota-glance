@@ -22,6 +22,9 @@ function parseRateLimitLine(line, sourcePath = '') {
     const record = JSON.parse(line);
     const rateLimits = record?.payload?.rate_limits;
     if (record?.type !== 'event_msg' || !rateLimits) return null;
+    // Other buckets (for example premium) are not Codex's quota or credit balance.
+    // Accept legacy records without an ID, but never overwrite Codex with another ID.
+    if (rateLimits.limit_id && rateLimits.limit_id !== 'codex') return null;
 
     const timestampMs = Date.parse(record.timestamp);
     if (!Number.isFinite(timestampMs)) return null;
@@ -63,11 +66,16 @@ function classifyLimits(primary, secondary) {
   return { fiveHour, weekly };
 }
 
+function numericValue(value) {
+  if (value == null || (typeof value === 'string' && !value.trim())) return NaN;
+  return typeof value === 'number' || typeof value === 'string' ? Number(value) : NaN;
+}
+
 function normalizeLimit(limit) {
   if (!limit) return null;
-  const usedPercent = Number(limit.used_percent);
-  const resetsAt = Number(limit.resets_at);
-  const windowMinutes = Number(limit.window_minutes);
+  const usedPercent = numericValue(limit.used_percent);
+  const resetsAt = numericValue(limit.resets_at);
+  const windowMinutes = numericValue(limit.window_minutes);
   return {
     usedPercent: Number.isFinite(usedPercent) ? Math.min(100, Math.max(0, usedPercent)) : null,
     remainingPercent: Number.isFinite(usedPercent) ? Math.min(100, Math.max(0, 100 - usedPercent)) : null,
@@ -78,7 +86,7 @@ function normalizeLimit(limit) {
 
 function normalizeCredits(credits) {
   if (!credits) return null;
-  const balance = Number(credits.balance);
+  const balance = numericValue(credits.balance);
   return {
     hasCredits: credits.has_credits === true,
     unlimited: credits.unlimited === true,
@@ -113,8 +121,27 @@ async function listJsonlFiles(root) {
   return result;
 }
 
+function mergeUsageSnapshots(snapshots) {
+  const records = snapshots.filter(snapshot => snapshot && !snapshot.unavailableReason)
+    .sort((a, b) => Date.parse(b.observedAt) - Date.parse(a.observedAt));
+  if (!records.length) return null;
+  const result = { ...records[0], fieldObservedAt: {} };
+  // Each field retains its own observation time, even when read from an older line.
+  for (const key of ['fiveHour', 'weekly', 'primary', 'secondary', 'credits']) {
+    const candidates = records.filter(snapshot => key === 'credits'
+      ? snapshot[key] && (Number.isFinite(snapshot[key].balance) || snapshot[key].unlimited)
+      : Number.isFinite(snapshot[key]?.remainingPercent));
+    candidates.sort((a, b) => Date.parse(b.fieldObservedAt?.[key] || b.observedAt) - Date.parse(a.fieldObservedAt?.[key] || a.observedAt));
+    const source = candidates[0];
+    result[key] = source?.[key] || null;
+    if (source) result.fieldObservedAt[key] = source.fieldObservedAt?.[key] || source.observedAt;
+  }
+  return result;
+}
+
 async function findLatestInFile(filePath) {
   let handle;
+  let latest = null;
   try {
     handle = await fsp.open(filePath, 'r');
     const { size } = await handle.stat();
@@ -134,10 +161,11 @@ async function findLatestInFile(filePath) {
 
       for (let index = lines.length - 1; index >= 0; index -= 1) {
         const parsed = parseRateLimitLine(lines[index], filePath);
-        if (parsed) return parsed;
+        if (parsed) latest = mergeUsageSnapshots([latest, parsed]);
+        if (latest?.fiveHour && latest?.weekly && latest?.credits) return latest;
       }
     }
-    return parseRateLimitLine(suffix, filePath);
+    return mergeUsageSnapshots([latest, parseRateLimitLine(suffix, filePath)]);
   } catch {
     return null;
   } finally {
@@ -149,7 +177,7 @@ async function readLatestSnapshot(roots) {
   const groups = await Promise.all(roots.map(listJsonlFiles));
   const files = groups.flat().sort((a, b) => b.mtimeMs - a.mtimeMs).slice(0, MAX_FILES);
   const snapshots = await Promise.all(files.map((file) => findLatestInFile(file.path)));
-  const latest = snapshots.filter(Boolean).sort((a, b) => Date.parse(b.observedAt) - Date.parse(a.observedAt))[0];
+  const latest = mergeUsageSnapshots(snapshots);
 
   return latest || {
     observedAt: null,
@@ -247,6 +275,7 @@ module.exports = {
   UsageReader,
   classifyLimits,
   findLatestInFile,
+  mergeUsageSnapshots,
   normalizeCredits,
   normalizeLimit,
   normalizeRefreshInterval,

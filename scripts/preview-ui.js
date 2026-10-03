@@ -10,8 +10,9 @@ http.createServer((req, res) => {
     res.setHeader('Content-Type', 'text/javascript');
     return res.end(`const snapshot = {credits:{balance:434.53,hasCredits:true},weekly:{remainingPercent:18,resetsAt:new Date(Date.now()+5*86400000).toISOString()},fiveHour:{remainingPercent:42,resetsAt:new Date(Date.now()+7200000).toISOString()},planType:'plus',checkedAt:new Date().toISOString()};
 const mode = new URLSearchParams(location.search).get('state');
+if(mode==='exhausted') {snapshot.fiveHour.remainingPercent=0;snapshot.weekly.remainingPercent=38;}
 const event={eventId:'demo',canonicalId:'demo',sourceUrl:'https://x.com/i/status/123',source:{type:'x',tier:2,author:'thsottiaux',url:'https://x.com/i/status/123'},publishedAt:new Date().toISOString(),status:mode==='completed'?'completed':'scheduled',certainty:mode==='secondary'?'secondary':'confirmed',scope:'paid_users',effectiveAt:new Date(Date.now()+3600000).toISOString(),effectiveAtPrecision:'exact',type:'scheduled_usage_reset'};
-let feed={event:mode==='empty'?null:event};let preferences={opacity:1,notifications:{enabled:true,confirmedOnly:true,announceDetection:true,beforeMinutes:[30,10],completed:true,secondarySources:false}};
+let feed={event:['empty','exhausted'].includes(mode)?null:event};let preferences={opacity:1,notifications:{enabled:true,confirmedOnly:true,announceDetection:true,beforeMinutes:[30,10],completed:true,secondarySources:false}};
 let changed=()=>{}; let scheduledNotification=()=>{};
 document.addEventListener('DOMContentLoaded',()=>{
   const controls=document.createElement('div'); controls.className='preview-controls';

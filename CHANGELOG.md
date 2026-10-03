@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.5.3 - 2026-10-04
+
+- Ignore non-Codex rate-limit buckets so premium records cannot erase the 5-hour/weekly quota or replace the Codex credit balance.
+- Preserve each quota window's last valid observation independently through partial records and startup scans, with per-field timestamps across session files.
+- Treat missing numeric values as unknown rather than a false zero balance or 100% recovery.
+
 ## 1.5.2 - 2026-10-04
 
 - Deduplicate regular reset-time and subsequent quota recovery notifications per window, including across restarts.
