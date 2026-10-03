@@ -17,7 +17,8 @@ function notificationCopy(event, kind, language = 'ja', minutes) {
   const body = kind === 'local' ? (ja ? 'Codexの記録で週間残り100%への回復を確認しました。OpenAI全体の完了確認ではありません。' : 'Codex local records show weekly quota restored to 100%. This does not confirm a global reset.')
     : `${scope} · ${when}${event.certainty === 'confirmed' ? '' : ja ? '\n参考情報：公式の確定告知ではありません。' : '\nReference information, not a confirmed announcement.'}`;
   const previous = kind === 'revision' && event.previousEffectiveAt ? `\n${ja ? '変更前' : 'Previously'}: ${event.previousEffectiveAt}` : '';
-  return { title: `Quota Glance — ${titles[kind]}`, body: body + previous, sourceUrl: event.sourceUrl };
+  return { title: `Quota Glance — ${titles[kind]}`, body: body + previous, sourceUrl: event.sourceUrl,
+    scheduledEffect: event.status === 'scheduled' && ['detection', 'reminder', 'revision'].includes(kind) };
 }
 class ResetNotifier {
   constructor({ statePath = null, send, getSettings = () => DEFAULT_NOTIFICATIONS, getLanguage = () => 'ja', now = () => Date.now() } = {}) {
@@ -26,6 +27,7 @@ class ResetNotifier {
     try { const stored = JSON.parse(fs.readFileSync(statePath, 'utf8')); if (stored.events && stored.sent) this.state = stored; } catch {}
     this.previousLimits = this.state.previousLimits ||= {};
     this.state.pendingRecoveries ||= {};
+    this.state.awaitingQuotaRecovery ||= {};
   }
   persist() {
     if (!this.statePath) return;
@@ -57,10 +59,22 @@ class ResetNotifier {
           const copy = notificationCopy({}, 'local', this.getLanguage());
           copy.body = ja ? `${label}：Codexのローカル記録で残り100%への回復を確認しました。OpenAI全体の完了確認ではありません。` : `${label}: Codex local records show quota restored to 100%. This does not confirm a global reset.`;
           const key = `local:${window}:${pending.resetsAt || pending.observedAt}`;
-          await sendOnce(key, copy);
-          if (this.state.sent[key]) delete this.state.pendingRecoveries[window];
+          // A deadline toast and the subsequent 100% observation are one reset.
+          if (this.state.awaitingQuotaRecovery[window]) this.state.sent[key] = new Date(now).toISOString();
+          else await sendOnce(key, copy);
+          if (this.state.sent[key]) {
+            const completedDeadline = this.state.awaitingQuotaRecovery[window] || scheduledAt;
+            if (completedDeadline) this.state.sent[`quota-time:${window}:${completedDeadline}`] = new Date(now).toISOString();
+            delete this.state.awaitingQuotaRecovery[window];
+            delete this.state.pendingRecoveries[window];
+          }
         }
-        if (due && !recovered) await sendOnce(`quota-time:${window}:${scheduledAt}`, { title: ja ? `Quota Glance — ${label}のリセット時刻` : `Quota Glance — ${label} reset time`, body: ja ? 'Codexが記録した通常のリセット時刻になりました。利用枠への反映は次のローカル記録で確認します。' : 'The regular reset time recorded by Codex has arrived. Quota recovery awaits the next local record.' });
+        if (due && !recovered && !pending) {
+          const key = `quota-time:${window}:${scheduledAt}`;
+          const alreadySent = this.state.sent[key];
+          await sendOnce(key, { title: ja ? `Quota Glance — ${label}のリセット時刻` : `Quota Glance — ${label} reset time`, body: ja ? 'Codexが記録した通常のリセット時刻になりました。利用枠への反映は次のローカル記録で確認します。' : 'The regular reset time recorded by Codex has arrived. Quota recovery awaits the next local record.' });
+          if (!alreadySent && this.state.sent[key]) this.state.awaitingQuotaRecovery[window] = scheduledAt;
+        }
       }
       // Evaluate the old deadline before accepting the next cycle's schedule.
       const retryDeadline = due && !recovered && settings.enabled && settings[window] && !this.state.sent[`quota-time:${window}:${scheduledAt}`];

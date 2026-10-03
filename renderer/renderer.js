@@ -388,7 +388,31 @@ function renderLimit(limit, targets) {
   targets.countdown.textContent = limit?.resetsAt ? formatCountdown(limit.resetsAt) : '';
 }
 
+const recoveryTracker = new window.RecoveryTracker();
+const recoveryGlow = document.getElementById('recovery-glow');
+const glowQueue = [];
+let activeGlow = null;
+function playGlow(color = 'green') {
+  if (activeGlow) {
+    if (activeGlow !== color && !glowQueue.includes(color)) glowQueue.push(color);
+    return;
+  }
+  activeGlow = color;
+  recoveryGlow.classList.toggle('notification-glow', color === 'yellow');
+  recoveryGlow.classList.add('active');
+}
+recoveryGlow.addEventListener('animationend', () => {
+  recoveryGlow.classList.remove('active');
+  activeGlow = null;
+  const next = glowQueue.shift();
+  if (next) requestAnimationFrame(() => requestAnimationFrame(() => playGlow(next)));
+});
+document.addEventListener('DOMContentLoaded', () => window.codexUsage.onResetNotification?.(() => playGlow('yellow')));
 function render(snapshot) {
+  if (recoveryTracker.update(snapshot)) {
+    // Simultaneous recoveries are merged, never looped or restarted mid-sweep.
+    playGlow('green');
+  }
   currentSnapshot = snapshot;
   if (!snapshot || snapshot.unavailableReason) {
     elements.statusText.textContent = t('waiting');

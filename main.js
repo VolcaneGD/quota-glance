@@ -18,13 +18,17 @@ function updateNotifications() {
   const events = resetFeedReader?.getState()?.events || [];
   notificationQueue = notificationQueue.then(() => resetNotifier?.update(events, usage)).catch(error => console.warn('Notification processing failed:', error.message));
 }
-function sendResetNotification(copy) {
+function sendResetNotification(copy, { effect = true } = {}) {
   if (!Notification.isSupported()) return Promise.resolve(false);
   return new Promise(resolve => {
     const notification = new Notification({ title: copy.title, body: copy.body, silent: false, icon: path.join(__dirname, 'assets', 'icon.ico') });
     liveNotifications.add(notification);
     const timeout = setTimeout(() => { liveNotifications.delete(notification); resolve(false); }, 10000);
-    notification.once('show', () => { clearTimeout(timeout); resolve(true); });
+    notification.once('show', () => {
+      clearTimeout(timeout);
+      if (effect && copy.scheduledEffect && mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('reset-notification:shown');
+      resolve(true);
+    });
     notification.once('failed', () => { clearTimeout(timeout); liveNotifications.delete(notification); resolve(false); });
     notification.once('close', () => liveNotifications.delete(notification));
     notification.on('click', () => { mainWindow.show(); mainWindow.focus(); });
@@ -265,7 +269,7 @@ ipcMain.handle('x-api:set-token', async (_event, token) => { const status = xApi
 ipcMain.handle('x-api:clear-token', () => xApiTokenStore.clear());
 ipcMain.handle('app:get-preferences', () => preferences);
 ipcMain.handle('notifications:set', (_event, value) => { preferences.notifications = normalizeNotifications(value); savePreferences(); updateNotifications(); return preferences.notifications; });
-ipcMain.handle('notifications:test', () => sendResetNotification({ title: 'Quota Glance', body: uiLanguage === 'ja' ? 'Windows通知のテストです。' : 'Windows notification test.' }));
+ipcMain.handle('notifications:test', () => sendResetNotification({ title: 'Quota Glance', body: uiLanguage === 'ja' ? 'Windows通知のテストです。' : 'Windows notification test.' }, { effect: false }));
 ipcMain.handle('app:set-opacity', (_event, opacity) => {
   preferences.opacity = Math.min(1, Math.max(0.4, Number(opacity) || 1));
   mainWindow.setOpacity(preferences.opacity); savePreferences(); return preferences.opacity;

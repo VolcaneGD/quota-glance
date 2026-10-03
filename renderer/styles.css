@@ -27,6 +27,36 @@ body {
 
 button { font: inherit; }
 
+/* Window-wide, non-interactive success overlay: one bottom-to-top sweep. */
+#recovery-glow {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  overflow: hidden;
+  pointer-events: none;
+  -webkit-app-region: no-drag;
+}
+#recovery-glow::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  background: linear-gradient(to top, transparent 0%, rgb(var(--glow-rgb, 65 255 157) / .08) 24%, rgb(var(--glow-rgb, 65 255 157) / .32) 48%, rgb(var(--glow-rgb, 65 255 157) / .14) 64%, transparent 100%);
+  transform: translateY(100%);
+}
+#recovery-glow.active::before { animation: recovery-sweep 1.6s cubic-bezier(.2, .65, .3, 1) 1 both; }
+#recovery-glow.notification-glow { --glow-rgb: 255 207 83; }
+@keyframes recovery-sweep {
+  0% { transform: translateY(100%); opacity: 0; }
+  15% { opacity: 1; }
+  75% { opacity: 1; }
+  100% { transform: translateY(-100%); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #recovery-glow.active::before { animation: recovery-soft-glow .6s ease-out 1 both; }
+  @keyframes recovery-soft-glow { 0% { transform:none; opacity:0; } 35% { transform:none; opacity:.5; } 100% { transform:none; opacity:0; } }
+}
+
 .app-shell {
   display: flex;
   flex-direction: column;

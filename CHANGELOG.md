@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.5.2 - 2026-10-04
+
+- Deduplicate regular reset-time and subsequent quota recovery notifications per window, including across restarts.
+- Add a single window-wide green glow sweep when the 5-hour/weekly quota recovers to 100% or the credit balance increases.
+- Play the yellow variant when Windows accepts a scheduled-reset notification (detection, reminder or schedule revision), not completion/recovery notifications.
+- Merge simultaneous recovery effects, retain baselines through missing data, and respect reduced-motion preferences.
+- Add interactive synthetic preview controls for both quota windows and credit increases.
+
 ## 1.5.1 - 2026-10-03
 
 - Persist local quota observations so 5-hour/weekly recovery can be detected across restarts.

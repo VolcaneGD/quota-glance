@@ -17,6 +17,11 @@ contextBridge.exposeInMainWorld('codexUsage', {
     return () => ipcRenderer.removeListener('reset-feed:changed', listener);
   },
   getPreferences: () => ipcRenderer.invoke('app:get-preferences'),
+  onResetNotification: (callback) => {
+    const listener = () => callback();
+    ipcRenderer.on('reset-notification:shown', listener);
+    return () => ipcRenderer.removeListener('reset-notification:shown', listener);
+  },
   setNotifications: (value) => ipcRenderer.invoke('notifications:set', value),
   testNotification: () => ipcRenderer.invoke('notifications:test'),
   setOpacity: (opacity) => ipcRenderer.invoke('app:set-opacity', opacity),
