@@ -37,6 +37,6 @@ test('delayed credit balances do not flash while quotas remain unchanged', () =>
 });
 test('both glow colors share two sweeps and reduced motion repeats twice', () => {
   const css = fs.readFileSync(path.join(__dirname, '..', 'renderer', 'styles.css'), 'utf8');
-  assert.match(css, /animation: recovery-sweep[^;]* 2 both/);
-  assert.match(css, /animation: recovery-soft-glow[^;]* 2 both/);
+  assert.match(css, /animation: recovery-sweep \.8s[^;]* 2 both/);
+  assert.match(css, /animation: recovery-soft-glow \.3s[^;]* 2 both/);
 });
