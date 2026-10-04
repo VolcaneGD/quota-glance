@@ -2,6 +2,9 @@
 
 ## 1.5.5 - 2026-10-04
 
+- Replace the Windows default notification sound with the user-supplied MP3; play once after toast acceptance, including while the main window is hidden.
+- Repeat both green recovery and yellow scheduled-reset glow sweeps twice; reduced-motion fades also repeat twice.
+
 - Poll the installed Codex app-server's read-only account/rateLimits/read RPC without starting chats, so idle quota changes can be observed independently of session writes.
 - Preserve local-record fallback and last valid field values; never infer 100% from a deadline alone.
 - Run the notification clock independently of account/feed network requests, refresh after resume, and coalesce slow Windows notification updates instead of accumulating stale snapshots.

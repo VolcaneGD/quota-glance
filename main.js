@@ -3,6 +3,7 @@ const { app, BrowserWindow, ipcMain, Menu, nativeImage, Notification, powerMonit
 const { UsageReader } = require('./src/usage-reader');
 const { CodexAccountSource } = require('./src/codex-account-source');
 const { NotificationPump } = require('./src/notification-pump');
+const { NotificationSound } = require('./src/notification-sound');
 const { ResetFeedReader } = require('./src/reset-feed');
 const { collectSystemMetrics } = require('./src/system-metrics');
 const { loadWindowState, saveWindowState } = require('./src/window-state');
@@ -13,6 +14,7 @@ const { ResetNotifier, normalizeNotifications } = require('./src/reset-notifier'
 const { safeSourceUrl } = require('./src/reset-event');
 let resetNotifier;
 let notificationTimer;
+let notificationSound;
 const notificationPump = new NotificationPump((events, usage) => resetNotifier?.update(events, usage), error => console.warn('Notification processing failed:', error.message));
 const liveNotifications = new Set();
 function updateNotifications() {
@@ -23,11 +25,12 @@ function updateNotifications() {
 function sendResetNotification(copy, { effect = true } = {}) {
   if (!Notification.isSupported()) return Promise.resolve(false);
   return new Promise(resolve => {
-    const notification = new Notification({ title: copy.title, body: copy.body, silent: false, icon: path.join(__dirname, 'assets', 'icon.ico') });
+    const notification = new Notification({ title: copy.title, body: copy.body, silent: true, icon: path.join(__dirname, 'assets', 'icon.ico') });
     liveNotifications.add(notification);
     const timeout = setTimeout(() => { liveNotifications.delete(notification); resolve(false); }, 10000);
     notification.once('show', () => {
       clearTimeout(timeout);
+      notificationSound?.play();
       if (effect && copy.scheduledEffect && mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('reset-notification:shown');
       resolve(true);
     });
@@ -231,6 +234,7 @@ if (hasSingleInstanceLock) {
 
   app.whenReady().then(async () => {
     app.setAppUserModelId('dev.volcane.quota-glance');
+    notificationSound = new NotificationSound({ createWindow: options => new BrowserWindow(options), onError: error => console.warn('Notification sound failed:', error.message) });
     preferencesPath = path.join(app.getPath('userData'), 'quota-glance-state.json');
     xApiTokenStore = new SecureTokenStore(path.join(app.getPath('userData'), 'quota-glance-x-api.json'), safeStorage);
     resetFeedReader = new ResetFeedReader({
@@ -261,7 +265,7 @@ if (hasSingleInstanceLock) {
 }
 
 app.on('window-all-closed', (event) => event.preventDefault());
-app.on('before-quit', () => { isQuitting = true; clearInterval(notificationTimer); reader.stop(); resetFeedReader?.stop(); });
+app.on('before-quit', () => { isQuitting = true; clearInterval(notificationTimer); reader.stop(); resetFeedReader?.stop(); notificationSound?.stop(); });
 
 ipcMain.handle('usage:get', () => reader.getSnapshot());
 ipcMain.handle('usage:refresh', () => reader.refresh());

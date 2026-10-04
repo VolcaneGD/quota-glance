@@ -1,4 +1,6 @@
 const test = require('node:test');
+const fs = require('node:fs');
+const path = require('node:path');
 const assert = require('node:assert/strict');
 const { RecoveryTracker } = require('../renderer/recovery-effect');
 test('initial data and repeated refreshes never play the success effect', () => {
@@ -32,4 +34,9 @@ test('delayed credit balances do not flash while quotas remain unchanged', () =>
   assert.equal(tracker.update({ credits: { balance: 300 } }), false);
   assert.equal(tracker.update({ credits: { balance: 299 } }), false);
   assert.equal(tracker.update({ credits: { balance: 300 } }), false);
+});
+test('both glow colors share two sweeps and reduced motion repeats twice', () => {
+  const css = fs.readFileSync(path.join(__dirname, '..', 'renderer', 'styles.css'), 'utf8');
+  assert.match(css, /animation: recovery-sweep[^;]* 2 both/);
+  assert.match(css, /animation: recovery-soft-glow[^;]* 2 both/);
 });
