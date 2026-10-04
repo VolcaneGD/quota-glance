@@ -9,8 +9,8 @@ function normalizeNotifications(value = {}) {
 }
 function notificationCopy(event, kind, language = 'ja', minutes) {
   const ja = language !== 'en';
-  const titles = ja ? { detection: 'リセット予定を検知', active: 'リセット実施中の告知', completed: 'リセット実施済みの告知', revision: 'リセット告知が変更されました', reminder: `リセット予定の${minutes}分前`, local: '利用枠の回復をローカルデータで検知', cancelled: 'リセット予定の撤回を検知' }
-    : { detection: 'Reset scheduled', active: 'Reset in progress', completed: 'Reset announced as completed', revision: 'Reset announcement updated', reminder: `Reset scheduled in ${minutes} minutes`, local: 'Local quota recovery observed', cancelled: 'Reset schedule withdrawn' };
+  const titles = ja ? { detection: 'リセット予定を検知', active: 'リセット実施中の告知', completed: 'リセット実施済みの告知', revision: 'リセット告知が変更されました', reminder: `リセット予定の${minutes}分前`, local: '利用枠の回復を検知', cancelled: 'リセット予定の撤回を検知' }
+    : { detection: 'Reset scheduled', active: 'Reset in progress', completed: 'Reset announced as completed', revision: 'Reset announcement updated', reminder: `Reset scheduled in ${minutes} minutes`, local: 'Quota recovery observed', cancelled: 'Reset schedule withdrawn' };
   const scope = ({ all_users: ja ? '全ユーザー' : 'All users', paid_users: ja ? '有料ユーザー' : 'Paid users', unknown: ja ? '対象未発表' : 'Scope unspecified' })[event.scope] || event.scope;
   let when = event.effectiveAt ? new Intl.DateTimeFormat(ja ? 'ja-JP' : 'en-US', { timeZone: 'Asia/Tokyo', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(event.effectiveAt)) + ' JST' : event.timeDescription || (ja ? '時刻未発表' : 'Time unspecified');
   if (event.effectiveAtWindow) when = `${event.effectiveAtWindow.from} – ${event.effectiveAtWindow.to}`;
