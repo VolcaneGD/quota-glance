@@ -196,22 +196,28 @@ async function readLatestSnapshot(roots) {
 }
 
 class UsageReader extends EventEmitter {
-  constructor({ roots, refreshIntervalMs = DEFAULT_REFRESH_INTERVAL_MS }) {
+  constructor({ roots, refreshIntervalMs = DEFAULT_REFRESH_INTERVAL_MS, accountSource = null }) {
     super();
     this.roots = roots;
     this.refreshIntervalMs = normalizeRefreshInterval(refreshIntervalMs);
     this.snapshot = null;
     this.timer = null;
+    this.accountTimer = null;
     this.watchers = [];
     this.refreshing = null;
     this.debounceTimer = null;
     this.running = false;
+    this.accountSource = accountSource;
+    this.accountSnapshot = null;
+    this.localSnapshot = null;
+    this.accountRefreshing = null;
   }
 
   async start() {
     this.running = true;
-    await this.refresh();
     this.scheduleRefresh();
+    this.refreshAccount();
+    await this.refresh();
     for (const root of this.roots) {
       try {
         const watcher = fs.watch(root, { recursive: true }, () => {
@@ -231,11 +237,9 @@ class UsageReader extends EventEmitter {
     if (this.refreshing) return this.refreshing;
     this.refreshing = readLatestSnapshot(this.roots)
       .then((snapshot) => {
-        snapshot.checkedAt = new Date().toISOString();
-        const changed = JSON.stringify(snapshot) !== JSON.stringify(this.snapshot);
-        this.snapshot = snapshot;
-        if (changed) this.emit('change', snapshot);
-        return snapshot;
+        this.localSnapshot = snapshot;
+        this.publishSnapshot();
+        return this.snapshot;
       })
       .finally(() => { this.refreshing = null; });
     return this.refreshing;
@@ -245,10 +249,34 @@ class UsageReader extends EventEmitter {
     return this.snapshot;
   }
 
+  publishSnapshot() {
+    const snapshot = mergeUsageSnapshots([this.localSnapshot, this.accountSnapshot]) || this.localSnapshot;
+    if (!snapshot) return;
+    snapshot.checkedAt = new Date().toISOString();
+    const changed = JSON.stringify(snapshot) !== JSON.stringify(this.snapshot);
+    this.snapshot = snapshot;
+    if (changed) this.emit('change', snapshot);
+  }
+
+  async refreshAccount(force = false) {
+    if (!this.accountSource || this.accountRefreshing) return this.accountRefreshing;
+    this.accountRefreshing = this.accountSource.read({ force }).then(snapshot => {
+      if (!this.running) return;
+      if (snapshot) this.accountSnapshot = snapshot;
+      this.publishSnapshot();
+    }).catch(() => {}).finally(() => { this.accountRefreshing = null; });
+    return this.accountRefreshing;
+  }
+
   scheduleRefresh() {
     clearInterval(this.timer);
+    clearInterval(this.accountTimer);
     this.timer = this.running
       ? setInterval(() => this.refresh(), this.refreshIntervalMs)
+      : null;
+    // Account polling must not wait for a large local directory scan.
+    this.accountTimer = this.running && this.accountSource
+      ? setInterval(() => this.refreshAccount(), Math.max(15000, this.refreshIntervalMs))
       : null;
   }
 
@@ -262,9 +290,11 @@ class UsageReader extends EventEmitter {
   stop() {
     this.running = false;
     clearInterval(this.timer);
+    clearInterval(this.accountTimer);
     clearTimeout(this.debounceTimer);
     for (const watcher of this.watchers) watcher.close();
     this.watchers = [];
+    this.accountSource?.stop();
   }
 }
 

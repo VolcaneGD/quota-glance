@@ -1,6 +1,6 @@
 # Quota Glance
 
-Quota Glanceは、Codexがローカルに記録した利用状況を小さな常駐ウィンドウで確認できる、Windows向けの非公式フリーソフトです。5時間枠と週間枠を同時に表示します。
+Quota Glanceは、Codexの利用状況を小さな常駐ウィンドウで確認できる、Windows向けの非公式フリーソフトです。5時間枠と週間枠を同時に表示し、Codexがアイドル中でもアカウントの残量を取得します。
 
 > Quota GlanceはVOLCANEが独立して開発した非公式ツールです。OpenAIによる提供、承認、後援を受けた製品ではありません。
 
@@ -43,9 +43,11 @@ Quota Glanceは、Codexがローカルに記録した利用状況を小さな常
 
 ## データ取得と制約
 
-Quota Glanceは認証トークンやAPIキーを読みません。`%CODEX_HOME%\sessions`、または未設定時の`%USERPROFILE%\.codex\sessions`にCodex自身が保存した最新の`rate_limits`情報だけを抽出します。テレメトリー、広告、解析機能はありません。
+Quota Glance自身は認証トークンやAPIキーを読みません。インストール済みのCodex CLIまたはCodexデスクトップ付属のapp-serverを起動し、公式の読み取り専用RPC `account/rateLimits/read` で残量を取得します。認証はCodex自身が既存のログイン情報で処理します。チャットや推論リクエストは開始しません。テレメトリー、広告、解析機能はありません。
 
-表示値は「Codexが最後に利用状況をローカルへ記録した時点」の情報です。独立した公式APIからリアルタイム取得しているわけではありません。Codexを利用していない間にサーバー側だけで値が変わった場合は、次にCodexが応答を受け取ったときに同期されます。また、将来Codexのローカル記録形式が変更された場合、一時的に値を取得できなくなる可能性があります。
+アカウント取得は最短15秒間隔（更新頻度が15秒より長い場合はその間隔）で行い、Codexでのチャット操作を必要としません。取得に失敗した場合は最後の有効な値を保持し、60秒後以降に再試行します。通信・認証に問題がある場合や対応app-serverが見つからない場合は、`%CODEX_HOME%\sessions`（未設定時は`%USERPROFILE%\.codex\sessions`）などのローカル記録を併用します。各項目の最新の観測値を採用し、リセット時刻だけを根拠に100%へ書き換えることはありません。Codexや取得形式の変更、通信障害により更新できない場合があります。
+
+通常リセット時刻と告知の事前通知は、Codexの操作とは独立した1秒間隔の通知タイマーで判定します。遅いWindows通知処理には最新の情報だけを引き継ぎ、古い更新を大量にキューへ積み上げません。告知取得中でもタイマーは動作します。スリープ中・PCの電源が切れている間は実行できず、Windowsの通知設定・応答不可によって表示や音が抑制される場合があります。
 
 ### 確定リセット告知とWindows通知
 
@@ -93,9 +95,11 @@ npm.cmd run release
 
 ## English
 
-Quota Glance is an unofficial freeware utility for Windows that displays usage information recorded locally by Codex in a compact always-available window.
+Quota Glance is an unofficial freeware utility for Windows that displays Codex account usage in a compact always-available window, including while Codex is idle.
 
 It shows the remaining credit balance, five-hour and weekly usage windows, separate reset times, and countdowns. When a qualifying public announcement is available, it can also show a reset advisory card. The interface and tray menu can be switched between Japanese and English. Quota Glance does not read authentication tokens or use analytics.
+
+The installed Codex CLI or desktop-bundled app-server handles existing authentication and serves the documented read-only `account/rateLimits/read` RPC. No conversations or inference turns are started. Account polling runs at most once every 15 seconds, or at the selected refresh interval if longer. Failures retain real observations and back off for 60 seconds. Local session records remain a fallback; reset times alone never fabricate a 100% balance. An independent one-second notification clock handles regular deadlines and cached announcement reminders, even while account/feed requests are pending. Windows notification settings and sleep/power state still apply.
 
 Reset Announcement Watcher checks the public schema-v3 feed and official status RSS every 60 seconds. Google Alerts is a supplementary sensor and cannot independently confirm a reset. An optional user-owned X API token allows direct verification of configured accounts. Only posts published in the preceding three days are accepted. Explicit dates and timezones are preserved; relative times remain windows, and unspecified times are never predicted. Scheduled, active, completed, official incomplete and secondary information are distinguished.
 

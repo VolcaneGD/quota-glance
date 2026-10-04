@@ -1,6 +1,8 @@
 const path = require('node:path');
-const { app, BrowserWindow, ipcMain, Menu, nativeImage, Notification, safeStorage, screen, shell, Tray } = require('electron');
+const { app, BrowserWindow, ipcMain, Menu, nativeImage, Notification, powerMonitor, safeStorage, screen, shell, Tray } = require('electron');
 const { UsageReader } = require('./src/usage-reader');
+const { CodexAccountSource } = require('./src/codex-account-source');
+const { NotificationPump } = require('./src/notification-pump');
 const { ResetFeedReader } = require('./src/reset-feed');
 const { collectSystemMetrics } = require('./src/system-metrics');
 const { loadWindowState, saveWindowState } = require('./src/window-state');
@@ -11,12 +13,12 @@ const { ResetNotifier, normalizeNotifications } = require('./src/reset-notifier'
 const { safeSourceUrl } = require('./src/reset-event');
 let resetNotifier;
 let notificationTimer;
-let notificationQueue = Promise.resolve();
+const notificationPump = new NotificationPump((events, usage) => resetNotifier?.update(events, usage), error => console.warn('Notification processing failed:', error.message));
 const liveNotifications = new Set();
 function updateNotifications() {
   const usage = reader.getSnapshot();
   const events = resetFeedReader?.getState()?.events || [];
-  notificationQueue = notificationQueue.then(() => resetNotifier?.update(events, usage)).catch(error => console.warn('Notification processing failed:', error.message));
+  return notificationPump.update(events, usage);
 }
 function sendResetNotification(copy, { effect = true } = {}) {
   if (!Notification.isSupported()) return Promise.resolve(false);
@@ -54,6 +56,7 @@ if (!hasSingleInstanceLock) {
 
 const codexHome = process.env.CODEX_HOME || path.join(app.getPath('home'), '.codex');
 const reader = new UsageReader({
+  accountSource: new CodexAccountSource(),
   roots: [
     path.join(codexHome, 'sessions'),
     path.join(codexHome, 'archived_sessions'),
@@ -210,6 +213,7 @@ function updateTray(snapshot) {
 
 function publish(snapshot) {
   updateTray(snapshot);
+  updateNotifications();
   resetFeedReader?.setUsageSnapshot(snapshot);
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.webContents.send('usage:changed', snapshot);
@@ -248,9 +252,11 @@ if (hasSingleInstanceLock) {
         mainWindow.webContents.send('reset-feed:changed', state);
       }
     });
+    // Start the deadline clock before any network/feed request can delay startup.
+    notificationTimer = setInterval(updateNotifications, 1000);
+    powerMonitor.on('resume', () => { reader.refresh(); reader.refreshAccount(true); updateNotifications(); });
     await reader.start();
-    await resetFeedReader.start();
-    notificationTimer = setInterval(() => { resetFeedReader.publish('synced'); }, 15000);
+    resetFeedReader.start().catch(error => console.warn('Reset feed startup failed:', error.message));
   });
 }
 

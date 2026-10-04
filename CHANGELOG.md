@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.5.5 - 2026-10-04
+
+- Poll the installed Codex app-server's read-only account/rateLimits/read RPC without starting chats, so idle quota changes can be observed independently of session writes.
+- Preserve local-record fallback and last valid field values; never infer 100% from a deadline alone.
+- Run the notification clock independently of account/feed network requests, refresh after resume, and coalesce slow Windows notification updates instead of accumulating stale snapshots.
+- Verify cached schedule reminders and regular deadlines while Codex is idle, including duplicate suppression after recovery.
+
 ## 1.5.4 - 2026-10-04
 
 - Remove the credit-increase glow effect entirely, preventing delayed wallet balances from producing false recovery effects.

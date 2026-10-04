@@ -57,7 +57,8 @@ class ResetNotifier {
         const pending = this.state.pendingRecoveries[window];
         if (settings.completed && pending) {
           const copy = notificationCopy({}, 'local', this.getLanguage());
-          copy.body = ja ? `${label}：Codexのローカル記録で残り100%への回復を確認しました。OpenAI全体の完了確認ではありません。` : `${label}: Codex local records show quota restored to 100%. This does not confirm a global reset.`;
+          const account = usage?.dataSource === 'account';
+          copy.body = ja ? `${label}：Codexの${account ? 'アカウント情報' : 'ローカル記録'}で残り100%への回復を確認しました。OpenAI全体の完了確認ではありません。` : `${label}: Codex ${account ? 'account data' : 'local records'} show quota restored to 100%. This does not confirm a global reset.`;
           const key = `local:${window}:${pending.resetsAt || pending.observedAt}`;
           // A deadline toast and the subsequent 100% observation are one reset.
           if (this.state.awaitingQuotaRecovery[window]) this.state.sent[key] = new Date(now).toISOString();

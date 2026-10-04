@@ -7,6 +7,19 @@ const { ResetNotifier, normalizeNotifications, notificationCopy } = require('../
 const { extractResetEvent } = require('../src/reset-event');
 const start = Date.parse('2026-10-03T13:00:00Z');
 const event = extractResetEvent({ id: '123', author: 'thsottiaux', verifiedOriginal: true, created_at: '2026-10-03T12:00:00Z', text: 'We will reset Codex usage limits for all users at 2pm UTC.' }, new Date(start).toISOString());
+
+test('idle deadline notifies without any new Codex usage record, then recovery stays deduplicated', async () => {
+  let time = start; const sent = [];
+  const notifier = new ResetNotifier({ now: () => time, send: async copy => { sent.push(copy); return true; } });
+  const usage = { fiveHour: { remainingPercent: 0, resetsAt: new Date(start + 60000).toISOString() }, weekly: { remainingPercent: 38 } };
+  await notifier.update([], usage);
+  time += 60000;
+  await notifier.update([], usage); await notifier.update([], usage);
+  assert.equal(sent.length, 1);
+  assert.equal(usage.fiveHour.remainingPercent, 0, 'notification must not invent recovery');
+  await notifier.update([], { ...usage, fiveHour: { remainingPercent: 100, resetsAt: new Date(time + 5 * 3600000).toISOString() } });
+  assert.equal(sent.length, 1);
+});
 test('yellow effect is limited to scheduled announcement notifications', () => {
   for (const kind of ['detection', 'reminder', 'revision']) assert.equal(notificationCopy(event, kind).scheduledEffect, true);
   for (const kind of ['active', 'completed', 'local', 'cancelled']) assert.equal(notificationCopy(event, kind).scheduledEffect, false);
