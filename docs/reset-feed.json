@@ -1,5 +1,47 @@
 {
   "schemaVersion": 3,
-  "updatedAt": "2026-10-07T21:35:00.108Z",
-  "events": []
+  "updatedAt": "2026-10-08T01:16:42.063Z",
+  "events": [
+    {
+      "eventId": "x-2107913674593644711",
+      "id": "x-2107913674593644711",
+      "sourceUrl": "https://x.com/i/status/2107913674593644711",
+      "source": {
+        "type": "x",
+        "tier": 3,
+        "author": "thsottiaux",
+        "url": "https://x.com/i/status/2107913674593644711"
+      },
+      "publishedAt": "2026-10-07T22:28:09.000Z",
+      "detectedAt": "2026-10-08T01:16:42.063Z",
+      "type": "banked_reset",
+      "status": "scheduled",
+      "certainty": "secondary",
+      "scope": "all_users",
+      "effectiveAt": null,
+      "effectiveAtWindow": null,
+      "effectiveAtPrecision": "date_only",
+      "timeDescription": "today",
+      "products": [
+        "codex",
+        "chatgpt"
+      ],
+      "quotaWindows": [],
+      "evidence": {
+        "explicitReset": false,
+        "explicitTime": true,
+        "explicitScope": true
+      },
+      "canonicalId": "x-2107913674593644711",
+      "revision": "3dd2a6429dc9",
+      "sources": [
+        {
+          "type": "x",
+          "tier": 3,
+          "author": "thsottiaux",
+          "url": "https://x.com/i/status/2107913674593644711"
+        }
+      ]
+    }
+  ]
 }
