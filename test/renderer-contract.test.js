@@ -78,7 +78,7 @@ test('残り割合の色分岐とミニマムモードの契約を維持する',
   assert.match(css, /\.progress-fill\.critical/);
   assert.match(css, /\.minimum-mode \.app-shell/);
   assert.doesNotMatch(css, /\.minimum-mode \.status-strip\s*\{\s*display\s*:\s*none/);
-  assert.match(main, /mainWindow\.setSize\(310, 310, true\);/);
+  assert.match(main, /mainWindow\.setSize\(310, 390, true\);/);
   assert.match(main, /height: 800/);
   assert.match(main, /Math\.max\(800, bounds\.height\)/);
 });

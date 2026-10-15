@@ -274,6 +274,18 @@ footer { display: flex; align-items: center; gap: 8px; margin-top: 0; }
 .minimum-mode #reset-details { margin:0; font-size:8px; line-height:1.3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .minimum-mode .reset-alert-link { grid-column:2; grid-row:1 / 3; align-self:center; }
 .minimum-mode .reset-alert[hidden] { display:none; }
+.minimum-countdowns { display: none; }
+.minimum-mode .minimum-countdowns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 0;
+  padding: 8px 9px 4px;
+  border-top: 1px solid var(--line);
+}
+.minimum-countdown { min-width: 0; }
+.minimum-countdown p { margin: 0 0 4px; color: var(--muted); font-size: 10px; line-height: 1.4; }
+.minimum-countdown strong { display: block; font-size: 28px; line-height: 1.15; font-variant-numeric: tabular-nums; }
 
 @media (max-height: 450px) {
   .app-shell { gap: 8px; }

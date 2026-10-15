@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.5.6 - 2026-10-15
+
+- Add large reset countdowns at the bottom of minimum mode: 5-hour hours:minutes on the left and weekly days on the right, with bilingual labels.
+- Update countdowns every second; round partial minutes/days up, show zero after the deadline, and keep unknown reset times unavailable without inferring quota recovery.
+- Keep a compact gap below the reset announcement and move the countdowns up when no announcement is displayed.
+- Increase the minimum-mode window height to fit the countdowns; preserve the narrow 292px layout.
+
 ## 1.5.5 - 2026-10-04
 
 - Replace the Windows default notification sound with the user-supplied MP3; play once after toast acceptance, including while the main window is hidden.

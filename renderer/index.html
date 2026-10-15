@@ -129,6 +129,16 @@
         <button id="refresh-button" class="refresh-button">更新</button>
       </footer>
       <p id="error-message" class="error-message" hidden></p>
+      <section class="minimum-countdowns" aria-label="Reset countdowns">
+        <div class="minimum-countdown">
+          <p id="minimum-five-hour-label">5時間上限解除まで</p>
+          <strong id="minimum-five-hour-countdown" role="timer">—</strong>
+        </div>
+        <div class="minimum-countdown">
+          <p id="minimum-weekly-label">週間上限解除まで</p>
+          <strong id="minimum-weekly-countdown" role="timer">—</strong>
+        </div>
+      </section>
     </main>
     <script src="recovery-effect.js"></script>
     <script src="renderer.js"></script>

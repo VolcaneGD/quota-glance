@@ -5,10 +5,15 @@ const path = require('node:path');
 const root = path.join(__dirname, '..', 'renderer');
 http.createServer((req, res) => {
   const url = new URL(req.url, 'http://localhost');
-  if (url.pathname === '/preview.css') { const height = Math.min(1200, Math.max(652, Number(url.searchParams.get('height')) || 652)); res.setHeader('Content-Type', 'text/css'); return res.end(`html,body,#recovery-glow{width:372px;height:${height}px}.minimum-mode,.minimum-mode body,.minimum-mode #recovery-glow{width:310px;height:310px} .preview-controls{position:fixed;left:390px;top:24px;display:flex;flex-direction:column;gap:12px}.preview-controls button{padding:12px 16px;border:1px solid #35634d;border-radius:10px;background:#14271e;color:#80f4b8;cursor:pointer}`); }
+  if (url.pathname === '/preview.css') {
+    const height = Math.min(1200, Math.max(652, Number(url.searchParams.get('height')) || 652));
+    const width = url.searchParams.get('narrow') === 'true' ? 292 : 310;
+    res.setHeader('Content-Type', 'text/css');
+    return res.end(`html,body,#recovery-glow{width:372px;height:${height}px}body{background-repeat:no-repeat;background-color:#0b1210}.minimum-mode,.minimum-mode body,.minimum-mode #recovery-glow{width:${width}px;height:390px}.preview-controls{position:fixed;left:390px;top:24px;display:flex;flex-direction:column;gap:12px}.preview-controls button{padding:12px 16px;border:1px solid #35634d;border-radius:10px;background:#14271e;color:#80f4b8;cursor:pointer}`);
+  }
   if (url.pathname === '/mock.js') {
     res.setHeader('Content-Type', 'text/javascript');
-    return res.end(`const snapshot = {credits:{balance:434.53,hasCredits:true},weekly:{remainingPercent:18,resetsAt:new Date(Date.now()+5*86400000).toISOString()},fiveHour:{remainingPercent:42,resetsAt:new Date(Date.now()+7200000).toISOString()},planType:'plus',checkedAt:new Date().toISOString()};
+    return res.end(`const snapshot = {credits:{balance:434.53,hasCredits:true},weekly:{remainingPercent:18,resetsAt:new Date(Date.now()+7*86400000).toISOString()},fiveHour:{remainingPercent:42,resetsAt:new Date(Date.now()+182*60000).toISOString()},planType:'plus',checkedAt:new Date().toISOString()};
 const mode = new URLSearchParams(location.search).get('state');
 if(mode==='exhausted') {snapshot.fiveHour.remainingPercent=0;snapshot.weekly.remainingPercent=38;}
 const event={eventId:'demo',canonicalId:'demo',sourceUrl:'https://x.com/i/status/123',source:{type:'x',tier:2,author:'thsottiaux',url:'https://x.com/i/status/123'},publishedAt:new Date().toISOString(),status:mode==='completed'?'completed':'scheduled',certainty:mode==='secondary'?'secondary':'confirmed',scope:'paid_users',effectiveAt:new Date(Date.now()+3600000).toISOString(),effectiveAtPrecision:'exact',type:'scheduled_usage_reset'};
@@ -32,7 +37,7 @@ window.codexUsage={get:async()=>structuredClone(snapshot),refresh:async()=>struc
   const name = url.pathname === '/' ? 'index.html' : url.pathname.slice(1);
   if (!['index.html', 'styles.css', 'renderer.js', 'recovery-effect.js'].includes(name)) { res.writeHead(404); return res.end(); }
   let content = fs.readFileSync(path.join(root, name), 'utf8');
-  if (name === 'index.html') content = content.replace('</head>', `<link rel="stylesheet" href="preview.css?height=${Number(url.searchParams.get('height')) || 652}"></head>`).replace('<script src="renderer.js">', '<script src="mock.js"></script><script src="renderer.js">');
+  if (name === 'index.html') content = content.replace('</head>', `<link rel="stylesheet" href="preview.css?height=${Number(url.searchParams.get('height')) || 652}&narrow=${url.searchParams.get('narrow') === 'true'}"></head>`).replace('<script src="renderer.js">', '<script src="mock.js"></script><script src="renderer.js">');
   res.setHeader('Content-Type', name.endsWith('html') ? 'text/html; charset=utf-8' : name.endsWith('css') ? 'text/css' : 'text/javascript');
   res.end(content);
 }).listen(4177, '127.0.0.1', () => console.log('Synthetic Quota Glance preview: http://localhost:4177'));

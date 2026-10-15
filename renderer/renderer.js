@@ -122,6 +122,10 @@ const elements = {
   weeklyProgressFill: document.querySelector('#weekly-progress-fill'),
   weeklyResetTime: document.querySelector('#weekly-reset-time'),
   weeklyCountdown: document.querySelector('#weekly-countdown'),
+  minimumFiveHourLabel: document.querySelector('#minimum-five-hour-label'),
+  minimumWeeklyLabel: document.querySelector('#minimum-weekly-label'),
+  minimumFiveHourCountdown: document.querySelector('#minimum-five-hour-countdown'),
+  minimumWeeklyCountdown: document.querySelector('#minimum-weekly-countdown'),
   resetAlert: document.querySelector('#reset-alert'),
   resetAlertText: document.querySelector('#reset-alert-text'),
   resetAlertLink: document.querySelector('#reset-alert-link'),
@@ -260,11 +264,28 @@ function formatCountdown(value) {
   return t('minutesLeft', { minutes });
 }
 
+function formatMinimumCountdown(value, weekly = false, now = Date.now()) {
+  const deadline = value ? Date.parse(value) : NaN;
+  if (!Number.isFinite(deadline)) return '—';
+  const remaining = Math.max(0, deadline - now);
+  if (weekly) return `${Math.ceil(remaining / 86_400_000)}${language === 'ja' ? '日' : 'd'}`;
+  const minutes = Math.ceil(remaining / 60_000);
+  return `${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, '0')}`;
+}
+
+function renderMinimumCountdowns() {
+  const snapshot = currentSnapshot?.unavailableReason ? null : currentSnapshot;
+  elements.minimumFiveHourCountdown.textContent = formatMinimumCountdown(snapshot?.fiveHour?.resetsAt);
+  elements.minimumWeeklyCountdown.textContent = formatMinimumCountdown(snapshot?.weekly?.resetsAt, true);
+}
+
 function applyLanguage() {
   document.documentElement.lang = language;
   elements.balanceLabel.textContent = t('balanceLabel');
   elements.fiveHourLabel.textContent = t('fiveHourLabel');
   elements.weeklyLabel.textContent = t('weeklyLabel');
+  elements.minimumFiveHourLabel.textContent = language === 'ja' ? '5時間上限解除まで' : 'Until 5-hour reset';
+  elements.minimumWeeklyLabel.textContent = language === 'ja' ? '週間上限解除まで' : 'Until weekly reset';
   elements.fiveHourProgressTrack.setAttribute('aria-label', t('fiveHourAria'));
   elements.weeklyProgressTrack.setAttribute('aria-label', t('weeklyAria'));
   elements.sourceButton.title = t('revealSource');
@@ -414,6 +435,7 @@ function render(snapshot) {
     playGlow('green');
   }
   currentSnapshot = snapshot;
+  renderMinimumCountdowns();
   if (!snapshot || snapshot.unavailableReason) {
     elements.statusText.textContent = t('waiting');
     elements.statusDot.classList.add('stale');
@@ -544,4 +566,5 @@ setInterval(() => {
     elements.weeklyCountdown.textContent = formatCountdown(currentSnapshot.weekly.resetsAt);
   }
 }, 30_000);
+setInterval(renderMinimumCountdowns, 1_000);
 setInterval(async () => renderMetrics(await window.codexUsage.getSystemMetrics()), 5_000);
