@@ -8,8 +8,9 @@ http.createServer((req, res) => {
   if (url.pathname === '/preview.css') {
     const height = Math.min(1200, Math.max(652, Number(url.searchParams.get('height')) || 652));
     const width = url.searchParams.get('narrow') === 'true' ? 292 : 310;
+    const minimumHeight = Math.min(800, Math.max(124, Number(url.searchParams.get('minimumHeight')) || 390));
     res.setHeader('Content-Type', 'text/css');
-    return res.end(`html,body,#recovery-glow{width:372px;height:${height}px}body{background-repeat:no-repeat;background-color:#0b1210}.minimum-mode,.minimum-mode body,.minimum-mode #recovery-glow{width:${width}px;height:390px}.preview-controls{position:fixed;left:390px;top:24px;display:flex;flex-direction:column;gap:12px}.preview-controls button{padding:12px 16px;border:1px solid #35634d;border-radius:10px;background:#14271e;color:#80f4b8;cursor:pointer}`);
+    return res.end(`html,body,#recovery-glow{width:372px;height:${height}px}body{background-repeat:no-repeat;background-color:#0b1210}.minimum-mode,.minimum-mode body,.minimum-mode #recovery-glow{width:${width}px;height:${minimumHeight}px}.preview-controls{position:fixed;left:390px;top:24px;display:flex;flex-direction:column;gap:12px}.preview-controls button{padding:12px 16px;border:1px solid #35634d;border-radius:10px;background:#14271e;color:#80f4b8;cursor:pointer}`);
   }
   if (url.pathname === '/mock.js') {
     res.setHeader('Content-Type', 'text/javascript');
@@ -37,7 +38,7 @@ window.codexUsage={get:async()=>structuredClone(snapshot),refresh:async()=>struc
   const name = url.pathname === '/' ? 'index.html' : url.pathname.slice(1);
   if (!['index.html', 'styles.css', 'renderer.js', 'recovery-effect.js'].includes(name)) { res.writeHead(404); return res.end(); }
   let content = fs.readFileSync(path.join(root, name), 'utf8');
-  if (name === 'index.html') content = content.replace('</head>', `<link rel="stylesheet" href="preview.css?height=${Number(url.searchParams.get('height')) || 652}&narrow=${url.searchParams.get('narrow') === 'true'}"></head>`).replace('<script src="renderer.js">', '<script src="mock.js"></script><script src="renderer.js">');
+  if (name === 'index.html') content = content.replace('</head>', `<link rel="stylesheet" href="preview.css?height=${Number(url.searchParams.get('height')) || 652}&narrow=${url.searchParams.get('narrow') === 'true'}&minimumHeight=${Number(url.searchParams.get('minimumHeight')) || 390}"></head>`).replace('<script src="renderer.js">', '<script src="mock.js"></script><script src="renderer.js">');
   res.setHeader('Content-Type', name.endsWith('html') ? 'text/html; charset=utf-8' : name.endsWith('css') ? 'text/css' : 'text/javascript');
   res.end(content);
 }).listen(4177, '127.0.0.1', () => console.log('Synthetic Quota Glance preview: http://localhost:4177'));

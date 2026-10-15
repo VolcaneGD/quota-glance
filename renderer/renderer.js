@@ -126,6 +126,7 @@ const elements = {
   minimumWeeklyLabel: document.querySelector('#minimum-weekly-label'),
   minimumFiveHourCountdown: document.querySelector('#minimum-five-hour-countdown'),
   minimumWeeklyCountdown: document.querySelector('#minimum-weekly-countdown'),
+  minimumWeeklyResetTime: document.querySelector('#minimum-weekly-reset-time'),
   resetAlert: document.querySelector('#reset-alert'),
   resetAlertText: document.querySelector('#reset-alert-text'),
   resetAlertLink: document.querySelector('#reset-alert-link'),
@@ -273,10 +274,19 @@ function formatMinimumCountdown(value, weekly = false, now = Date.now()) {
   return `${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, '0')}`;
 }
 
+function formatMinimumResetTime(value) {
+  const deadline = value ? Date.parse(value) : NaN;
+  if (!Number.isFinite(deadline)) return '';
+  return `(${new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Tokyo', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+  }).format(new Date(deadline))})`;
+}
+
 function renderMinimumCountdowns() {
   const snapshot = currentSnapshot?.unavailableReason ? null : currentSnapshot;
   elements.minimumFiveHourCountdown.textContent = formatMinimumCountdown(snapshot?.fiveHour?.resetsAt);
   elements.minimumWeeklyCountdown.textContent = formatMinimumCountdown(snapshot?.weekly?.resetsAt, true);
+  elements.minimumWeeklyResetTime.textContent = formatMinimumResetTime(snapshot?.weekly?.resetsAt);
 }
 
 function applyLanguage() {

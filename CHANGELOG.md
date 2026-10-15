@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.5.7 - 2026-10-16
+
+- Show the weekly reset time beside the minimum-mode day countdown in smaller 24-hour `(HH:MM)` text, using Japan time and hiding unknown times.
+- Allow minimum-mode windows to shrink to 124px high, leaving the header, system metrics and credit balance visible.
+
 ## 1.5.6 - 2026-10-15
 
 - Add large reset countdowns at the bottom of minimum mode: 5-hour hours:minutes on the left and weekly days on the right, with bilingual labels.

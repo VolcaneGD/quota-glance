@@ -286,6 +286,8 @@ footer { display: flex; align-items: center; gap: 8px; margin-top: 0; }
 .minimum-countdown { min-width: 0; }
 .minimum-countdown p { margin: 0 0 4px; color: var(--muted); font-size: 10px; line-height: 1.4; }
 .minimum-countdown strong { display: block; font-size: 28px; line-height: 1.15; font-variant-numeric: tabular-nums; }
+.minimum-weekly-value { display: flex; align-items: baseline; gap: 6px; white-space: nowrap; }
+#minimum-weekly-reset-time { font-size: 16px; color: var(--muted); font-variant-numeric: tabular-nums; }
 
 @media (max-height: 450px) {
   .app-shell { gap: 8px; }

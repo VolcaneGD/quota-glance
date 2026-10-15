@@ -36,3 +36,9 @@ test('unknown reset times never produce a fake countdown', () => {
     assert.equal(format(value, true), '—');
   }
 });
+
+test('weekly reset time uses 24-hour Japan time including midnight', () => {
+  assert.equal(context.formatMinimumResetTime('2026-10-15T15:05:00Z'), '(00:05)');
+  assert.equal(context.formatMinimumResetTime('2026-10-15T04:02:00Z'), '(13:02)');
+  for (const value of [null, '', 'invalid']) assert.equal(context.formatMinimumResetTime(value), '');
+});
