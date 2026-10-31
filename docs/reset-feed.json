@@ -1,46 +1,5 @@
 {
   "schemaVersion": 3,
-  "updatedAt": "2026-10-31T16:04:09.509Z",
-  "events": [
-    {
-      "eventId": "x-2115850175868727621",
-      "id": "x-2115850175868727621",
-      "sourceUrl": "https://x.com/i/status/2115850175868727621",
-      "source": {
-        "type": "x",
-        "tier": 3,
-        "author": "thsottiaux",
-        "url": "https://x.com/i/status/2115850175868727621"
-      },
-      "publishedAt": "2026-10-30T11:07:14.000Z",
-      "detectedAt": "2026-10-30T20:46:10.290Z",
-      "type": "unknown",
-      "status": "scheduled",
-      "certainty": "secondary",
-      "scope": "pro",
-      "effectiveAt": null,
-      "effectiveAtWindow": null,
-      "effectiveAtPrecision": "unknown",
-      "timeDescription": null,
-      "products": [
-        "codex"
-      ],
-      "quotaWindows": [],
-      "evidence": {
-        "explicitReset": false,
-        "explicitTime": false,
-        "explicitScope": true
-      },
-      "canonicalId": "x-2115850175868727621",
-      "revision": "ad5a37407335",
-      "sources": [
-        {
-          "type": "x",
-          "tier": 3,
-          "author": "thsottiaux",
-          "url": "https://x.com/i/status/2115850175868727621"
-        }
-      ]
-    }
-  ]
+  "updatedAt": "2026-10-31T19:54:34.787Z",
+  "events": []
 }
